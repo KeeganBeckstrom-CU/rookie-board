@@ -1,0 +1,202 @@
+[
+ {
+  "pick_id": "1313268637158633472-1-1",
+  "league_id": "1313268637158633472",
+  "season": 2027,
+  "round": 1,
+  "from_team": "Own",
+  "proj_slot": 3,
+  "proj_pick": "1.03",
+  "proj_overall": 3
+ },
+ {
+  "pick_id": "1313268637158633472-2-1",
+  "league_id": "1313268637158633472",
+  "season": 2027,
+  "round": 2,
+  "from_team": "Own",
+  "proj_slot": 3,
+  "proj_pick": "2.03",
+  "proj_overall": 13
+ },
+ {
+  "pick_id": "1313268637158633472-2-9",
+  "league_id": "1313268637158633472",
+  "season": 2027,
+  "round": 2,
+  "from_team": "The IR Hospital",
+  "proj_slot": 5,
+  "proj_pick": "2.05",
+  "proj_overall": 15
+ },
+ {
+  "pick_id": "1313268637158633472-2-6",
+  "league_id": "1313268637158633472",
+  "season": 2027,
+  "round": 2,
+  "from_team": "MarlBurrow Reds",
+  "proj_slot": 6,
+  "proj_pick": "2.06",
+  "proj_overall": 16
+ },
+ {
+  "pick_id": "1313268637158633472-3-1",
+  "league_id": "1313268637158633472",
+  "season": 2027,
+  "round": 3,
+  "from_team": "Own",
+  "proj_slot": 3,
+  "proj_pick": "3.03",
+  "proj_overall": 23
+ },
+ {
+  "pick_id": "1313268637158633472-3-9",
+  "league_id": "1313268637158633472",
+  "season": 2027,
+  "round": 3,
+  "from_team": "The IR Hospital",
+  "proj_slot": 5,
+  "proj_pick": "3.05",
+  "proj_overall": 25
+ },
+ {
+  "pick_id": "1313268637158633472-4-1",
+  "league_id": "1313268637158633472",
+  "season": 2027,
+  "round": 4,
+  "from_team": "Own",
+  "proj_slot": 3,
+  "proj_pick": "4.03",
+  "proj_overall": 33
+ },
+ {
+  "pick_id": "1357944059481579520-1-10",
+  "league_id": "1357944059481579520",
+  "season": 2027,
+  "round": 1,
+  "from_team": "Own",
+  "proj_slot": 3,
+  "proj_pick": "1.03",
+  "proj_overall": 3
+ },
+ {
+  "pick_id": "1357944059481579520-1-2",
+  "league_id": "1357944059481579520",
+  "season": 2027,
+  "round": 1,
+  "from_team": "The Mushta",
+  "proj_slot": 10,
+  "proj_pick": "1.10",
+  "proj_overall": 10
+ },
+ {
+  "pick_id": "1357944059481579520-2-10",
+  "league_id": "1357944059481579520",
+  "season": 2027,
+  "round": 2,
+  "from_team": "Own",
+  "proj_slot": 3,
+  "proj_pick": "2.03",
+  "proj_overall": 13
+ },
+ {
+  "pick_id": "1357944059481579520-2-2",
+  "league_id": "1357944059481579520",
+  "season": 2027,
+  "round": 2,
+  "from_team": "The Mushta",
+  "proj_slot": 10,
+  "proj_pick": "2.10",
+  "proj_overall": 20
+ },
+ {
+  "pick_id": "1357944059481579520-3-10",
+  "league_id": "1357944059481579520",
+  "season": 2027,
+  "round": 3,
+  "from_team": "Own",
+  "proj_slot": 3,
+  "proj_pick": "3.03",
+  "proj_overall": 23
+ },
+ {
+  "pick_id": "1357944059481579520-3-2",
+  "league_id": "1357944059481579520",
+  "season": 2027,
+  "round": 3,
+  "from_team": "The Mushta",
+  "proj_slot": 10,
+  "proj_pick": "3.10",
+  "proj_overall": 30
+ },
+ {
+  "pick_id": "1357944059481579520-4-10",
+  "league_id": "1357944059481579520",
+  "season": 2027,
+  "round": 4,
+  "from_team": "Own",
+  "proj_slot": 3,
+  "proj_pick": "4.03",
+  "proj_overall": 33
+ },
+ {
+  "pick_id": "1389331009794744320-1-5",
+  "league_id": "1389331009794744320",
+  "season": 2027,
+  "round": 1,
+  "from_team": "Amon Ra Doggin",
+  "proj_slot": 4,
+  "proj_pick": "1.04",
+  "proj_overall": 4
+ },
+ {
+  "pick_id": "1389331009794744320-1-1",
+  "league_id": "1389331009794744320",
+  "season": 2027,
+  "round": 1,
+  "from_team": "Show me your TDs",
+  "proj_slot": 6,
+  "proj_pick": "1.06",
+  "proj_overall": 6
+ },
+ {
+  "pick_id": "1389331009794744320-1-10",
+  "league_id": "1389331009794744320",
+  "season": 2027,
+  "round": 1,
+  "from_team": "Own",
+  "proj_slot": 8,
+  "proj_pick": "1.08",
+  "proj_overall": 8
+ },
+ {
+  "pick_id": "1389331009794744320-2-10",
+  "league_id": "1389331009794744320",
+  "season": 2027,
+  "round": 2,
+  "from_team": "Own",
+  "proj_slot": 8,
+  "proj_pick": "2.08",
+  "proj_overall": 18
+ },
+ {
+  "pick_id": "1389331009794744320-3-10",
+  "league_id": "1389331009794744320",
+  "season": 2027,
+  "round": 3,
+  "from_team": "Own",
+  "proj_slot": 8,
+  "proj_pick": "3.08",
+  "proj_overall": 28
+ },
+ {
+  "pick_id": "1389331009794744320-4-10",
+  "league_id": "1389331009794744320",
+  "season": 2027,
+  "round": 4,
+  "from_team": "Own",
+  "proj_slot": 8,
+  "proj_pick": "4.08",
+  "proj_overall": 38
+ }
+]

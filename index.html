@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0c0e">
+<meta name="description" content="2027 Rookie Board: college QB, RB, WR and TE prospects for dynasty superflex PPR leagues.">
+<title>2027 Rookie Board</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23121316%27 stroke=%27%23f2c200%27 stroke-width=%274%27/%3E%3Ctext x=%2732%27 y=%2742%27 font-family=%27Arial,sans-serif%27 font-weight=%27700%27 font-size=%2726%27 text-anchor=%27middle%27 fill=%27%23f2c200%27%3E27%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="dash-root">
+<div class="rb" id="rookie-board">
+  <header class="rb-head" id="board-header">
+    <div>
+      <div class="rb-eyebrow">Scouting department · Superflex PPR</div>
+      <h1 class="rb-title"><span class="yr">2027</span> Rookie Board</h1>
+      <div class="rb-sub">College QB, RB, WR and TE prospects for the 2027 NFL Draft. Click a row for the full scouting card; tap ☆ to save a favorite.</div>
+    </div>
+    <div class="rb-sub" id="board-updated" data-source="players">Loading…</div>
+  </header>
+  <div class="rb-chrome-rule" aria-hidden="true"><span>G</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>G</span></div>
+
+  <div class="rb-focus" id="rb-focus" aria-live="polite"></div>
+  <div class="rb-controls">
+    <div class="rb-tabs" role="tablist" aria-label="Position" id="pos-tabs"></div>
+    <div class="rb-filters" id="rb-filters">
+      <input class="rb-input" id="rb-search" type="search" placeholder="Search player or school" aria-label="Search player or school">
+      <select class="rb-select" id="rb-favsort" aria-label="Sort favorites" hidden>
+        <option value="overall">Sort: Top 35 rank</option>
+        <option value="mock">Sort: Mock draft pick</option>
+        <option value="pos">Sort: Position, then rank</option>
+        <option value="prod">Sort: 2026 yards</option>
+        <option value="name">Sort: Name</option>
+      </select>
+      <select class="rb-select" id="rb-tag" aria-label="Market tag">
+        <option value="">All market tags</option>
+        <option value="Value">Value only</option>
+        <option value="Pricey">Pricey only</option>
+      </select>
+      <select class="rb-select" id="rb-declare" aria-label="Likely to declare">
+        <option value="">All declare odds</option>
+        <option value="High">High to declare</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="rb-crestpick" id="rb-crestpick" hidden></div>
+  <div class="rb-cols" aria-hidden="true" id="rb-cols">
+    <div></div><div>Rnk</div><div>Player</div><div class="ctr">Pos</div><div>School</div><div class="ctr c-cl">Cl</div>
+    <div class="num c-age">Age</div><div class="num c-ht">Ht</div><div class="num c-wt">Wt</div>
+    <div class="num" id="col-26">2026</div><div class="ctr">Declare</div><div class="c-proj">Projection</div>
+  </div>
+  <div class="rb-list" id="rb-list" role="list"></div>
+  <div class="rb-week" id="rb-week" hidden></div>
+  <div class="rb-mock" id="rb-mock" hidden></div>
+  <div class="rb-mydraft" id="rb-mydraft" hidden></div>
+
+  <div class="rb-legend" aria-hidden="true">
+    <span class="key"><span class="dot" style="background:#3b8f4f"></span>Click: scouting card</span>
+    <span class="key"><span class="dot" style="background:#e6e9ee"></span>☆ Favorite a player</span>
+    <span class="key"><span class="dot" style="background:#2f7a47"></span>Value: market drafts him later than our board</span>
+    <span class="key"><span class="dot" style="background:#8e2c25"></span>Pricey: market drafts him earlier</span>
+    <span class="key"><span class="dot" style="background:#c0392b"></span>Tabs: position boards</span>
+    <span class="key"><span class="dot" style="background:#2f6fc0"></span>Mock draft</span>
+    <span class="key"><span class="dot" style="background:#d4a017"></span>This week: board changes</span>
+  </div>
+  <div class="rb-foot" id="board-foot">
+    Age is age on draft day (April 22, 2027), shown only where a birth date was found. Each card marks whether its bio and stats were confirmed by two independent sources. School crests are original shields in each school's colors, not official logos. Stats come from ESPN, school athletics sites and CFB stat trackers; College Football Reference blocks automated access. Position ranks blend recent big boards (ESPN, PFF, Yahoo, Bleacher Report, The Athletic, Draft Countdown, NFL Draft Buzz) and dynasty rookie rankings, and refresh weekly. The Top 35 blends the superflex market consensus (60%) with our board (40%) and is grouped into tiers; Value/Pricey tags compare our scouting board with the superflex market (6+ spots apart); use the tag filter to list them. My draft uses each of your three Sleeper leagues' own formats, records and picks. ▲/▼ show the move since last week's board. Favorites are saved in this browser.
+    <span id="data-asof"></span>
+  </div>
+</div>
+</div>
+<script src="runtime.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

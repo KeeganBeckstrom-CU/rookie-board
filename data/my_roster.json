@@ -1,0 +1,1022 @@
+[
+ {
+  "row_id": "1313268637158633472-8188",
+  "league_id": "1313268637158633472",
+  "name": "Tyquan Thornton",
+  "pos": "WR",
+  "nfl_team": "KC",
+  "age": 26,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1313268637158633472-5850",
+  "league_id": "1313268637158633472",
+  "name": "Josh Jacobs",
+  "pos": "RB",
+  "nfl_team": "GB",
+  "age": 28,
+  "slot": "active",
+  "injury": "Out"
+ },
+ {
+  "row_id": "1313268637158633472-2505",
+  "league_id": "1313268637158633472",
+  "name": "Darren Waller",
+  "pos": "TE",
+  "nfl_team": "CAR",
+  "age": 34,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-4035",
+  "league_id": "1313268637158633472",
+  "name": "Alvin Kamara",
+  "pos": "RB",
+  "nfl_team": "NO",
+  "age": 31,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-10235",
+  "league_id": "1313268637158633472",
+  "name": "Roschon Johnson",
+  "pos": "RB",
+  "nfl_team": "CHI",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-11562",
+  "league_id": "1313268637158633472",
+  "name": "Spencer Rattler",
+  "pos": "QB",
+  "nfl_team": "NO",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-9225",
+  "league_id": "1313268637158633472",
+  "name": "Tank Bigsby",
+  "pos": "RB",
+  "nfl_team": "PHI",
+  "age": 24,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1313268637158633472-13150",
+  "league_id": "1313268637158633472",
+  "name": "Darius Cooper",
+  "pos": "WR",
+  "nfl_team": "PHI",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-13337",
+  "league_id": "1313268637158633472",
+  "name": "Emmett Johnson",
+  "pos": "RB",
+  "nfl_team": "KC",
+  "age": 23,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-7543",
+  "league_id": "1313268637158633472",
+  "name": "Travis Etienne Jr.",
+  "pos": "RB",
+  "nfl_team": "NO",
+  "age": 27,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1313268637158633472-11581",
+  "league_id": "1313268637158633472",
+  "name": "MarShawn Lloyd",
+  "pos": "RB",
+  "nfl_team": "GB",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-7547",
+  "league_id": "1313268637158633472",
+  "name": "Amon-Ra St. Brown",
+  "pos": "WR",
+  "nfl_team": "DET",
+  "age": 27,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1313268637158633472-13394",
+  "league_id": "1313268637158633472",
+  "name": "Josh Cameron",
+  "pos": "WR",
+  "nfl_team": "JAX",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-2306",
+  "league_id": "1313268637158633472",
+  "name": "Jameis Winston",
+  "pos": "QB",
+  "nfl_team": "NYG",
+  "age": 32,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-13285",
+  "league_id": "1313268637158633472",
+  "name": "Malachi Fields",
+  "pos": "WR",
+  "nfl_team": "NYG",
+  "age": 23,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-8676",
+  "league_id": "1313268637158633472",
+  "name": "Rashid Shaheed",
+  "pos": "WR",
+  "nfl_team": "SEA",
+  "age": 28,
+  "slot": "active",
+  "injury": "Out"
+ },
+ {
+  "row_id": "1313268637158633472-12508",
+  "league_id": "1313268637158633472",
+  "name": "Jaxson Dart",
+  "pos": "QB",
+  "nfl_team": "NYG",
+  "age": 23,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1313268637158633472-3321",
+  "league_id": "1313268637158633472",
+  "name": "Tyreek Hill",
+  "pos": "WR",
+  "nfl_team": "",
+  "age": 31,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-9484",
+  "league_id": "1313268637158633472",
+  "name": "Tucker Kraft",
+  "pos": "TE",
+  "nfl_team": "GB",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-8137",
+  "league_id": "1313268637158633472",
+  "name": "George Pickens",
+  "pos": "WR",
+  "nfl_team": "DAL",
+  "age": 25,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1313268637158633472-7021",
+  "league_id": "1313268637158633472",
+  "name": "Rico Dowdle",
+  "pos": "RB",
+  "nfl_team": "PIT",
+  "age": 28,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-13296",
+  "league_id": "1313268637158633472",
+  "name": "Caleb Douglas",
+  "pos": "WR",
+  "nfl_team": "MIA",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-3271",
+  "league_id": "1313268637158633472",
+  "name": "Tyler Higbee",
+  "pos": "TE",
+  "nfl_team": "LAR",
+  "age": 33,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1313268637158633472-13330",
+  "league_id": "1313268637158633472",
+  "name": "Kenyon Sadiq",
+  "pos": "TE",
+  "nfl_team": "NYJ",
+  "age": 21,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-13264",
+  "league_id": "1313268637158633472",
+  "name": "Dohnte Meyers",
+  "pos": "WR",
+  "nfl_team": "CIN",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-12545",
+  "league_id": "1313268637158633472",
+  "name": "Tyler Shough",
+  "pos": "QB",
+  "nfl_team": "NO",
+  "age": 27,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-12519",
+  "league_id": "1313268637158633472",
+  "name": "Luther Burden III",
+  "pos": "WR",
+  "nfl_team": "CHI",
+  "age": 22,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1313268637158633472-4046",
+  "league_id": "1313268637158633472",
+  "name": "Patrick Mahomes",
+  "pos": "QB",
+  "nfl_team": "KC",
+  "age": 31,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-11635",
+  "league_id": "1313268637158633472",
+  "name": "Ladd McConkey",
+  "pos": "WR",
+  "nfl_team": "LAC",
+  "age": 25,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1313268637158633472-6790",
+  "league_id": "1313268637158633472",
+  "name": "D'Andre Swift",
+  "pos": "RB",
+  "nfl_team": "CHI",
+  "age": 27,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-7526",
+  "league_id": "1313268637158633472",
+  "name": "Jaylen Waddle",
+  "pos": "WR",
+  "nfl_team": "DEN",
+  "age": 27,
+  "slot": "active",
+  "injury": "Out"
+ },
+ {
+  "row_id": "1313268637158633472-13301",
+  "league_id": "1313268637158633472",
+  "name": "Antonio Williams",
+  "pos": "WR",
+  "nfl_team": "WAS",
+  "age": 22,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-7553",
+  "league_id": "1313268637158633472",
+  "name": "Kyle Pitts Sr.",
+  "pos": "TE",
+  "nfl_team": "ATL",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1313268637158633472-6783",
+  "league_id": "1313268637158633472",
+  "name": "Jerry Jeudy",
+  "pos": "WR",
+  "nfl_team": "CLE",
+  "age": 27,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-7588",
+  "league_id": "1389331009794744320",
+  "name": "Javonte Williams",
+  "pos": "RB",
+  "nfl_team": "DAL",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-11564",
+  "league_id": "1389331009794744320",
+  "name": "Drake Maye",
+  "pos": "QB",
+  "nfl_team": "NE",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-6813",
+  "league_id": "1389331009794744320",
+  "name": "Jonathan Taylor",
+  "pos": "RB",
+  "nfl_team": "IND",
+  "age": 27,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13333",
+  "league_id": "1389331009794744320",
+  "name": "Deion Burks",
+  "pos": "WR",
+  "nfl_team": "IND",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13402",
+  "league_id": "1389331009794744320",
+  "name": "Skyler Bell",
+  "pos": "WR",
+  "nfl_team": "BUF",
+  "age": 24,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-8144",
+  "league_id": "1389331009794744320",
+  "name": "Chris Olave",
+  "pos": "WR",
+  "nfl_team": "NO",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-12484",
+  "league_id": "1389331009794744320",
+  "name": "Jayden Higgins",
+  "pos": "WR",
+  "nfl_team": "HOU",
+  "age": 23,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1389331009794744320-11646",
+  "league_id": "1389331009794744320",
+  "name": "Jalen Coker",
+  "pos": "WR",
+  "nfl_team": "CAR",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13297",
+  "league_id": "1389331009794744320",
+  "name": "Reggie Virgil",
+  "pos": "WR",
+  "nfl_team": "ARI",
+  "age": 22,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-11631",
+  "league_id": "1389331009794744320",
+  "name": "Brian Thomas Jr.",
+  "pos": "WR",
+  "nfl_team": "JAX",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13276",
+  "league_id": "1389331009794744320",
+  "name": "Omar Cooper Jr.",
+  "pos": "WR",
+  "nfl_team": "NYJ",
+  "age": 22,
+  "slot": "taxi",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1389331009794744320-12526",
+  "league_id": "1389331009794744320",
+  "name": "Tetairoa McMillan",
+  "pos": "WR",
+  "nfl_team": "CAR",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13281",
+  "league_id": "1389331009794744320",
+  "name": "Jordyn Tyson",
+  "pos": "WR",
+  "nfl_team": "NO",
+  "age": 22,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-12718",
+  "league_id": "1389331009794744320",
+  "name": "Konata Mumpfield",
+  "pos": "WR",
+  "nfl_team": "LAR",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-10236",
+  "league_id": "1389331009794744320",
+  "name": "Dalton Kincaid",
+  "pos": "TE",
+  "nfl_team": "BUF",
+  "age": 27,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1389331009794744320-8183",
+  "league_id": "1389331009794744320",
+  "name": "Brock Purdy",
+  "pos": "QB",
+  "nfl_team": "SF",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-9229",
+  "league_id": "1389331009794744320",
+  "name": "Anthony Richardson Sr.",
+  "pos": "QB",
+  "nfl_team": "IND",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-8112",
+  "league_id": "1389331009794744320",
+  "name": "Drake London",
+  "pos": "WR",
+  "nfl_team": "ATL",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-12530",
+  "league_id": "1389331009794744320",
+  "name": "Travis Hunter",
+  "pos": "WR",
+  "nfl_team": "JAX",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-9509",
+  "league_id": "1389331009794744320",
+  "name": "Bijan Robinson",
+  "pos": "RB",
+  "nfl_team": "ATL",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-12508",
+  "league_id": "1389331009794744320",
+  "name": "Jaxson Dart",
+  "pos": "QB",
+  "nfl_team": "NYG",
+  "age": 23,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1389331009794744320-12474",
+  "league_id": "1389331009794744320",
+  "name": "Woody Marks",
+  "pos": "RB",
+  "nfl_team": "HOU",
+  "age": 25,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1389331009794744320-12504",
+  "league_id": "1389331009794744320",
+  "name": "Kaleb Johnson",
+  "pos": "RB",
+  "nfl_team": "GB",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13311",
+  "league_id": "1389331009794744320",
+  "name": "Chris Bell",
+  "pos": "WR",
+  "nfl_team": "MIA",
+  "age": 22,
+  "slot": "taxi",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1389331009794744320-11630",
+  "league_id": "1389331009794744320",
+  "name": "Roman Wilson",
+  "pos": "WR",
+  "nfl_team": "PIT",
+  "age": 25,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1389331009794744320-12518",
+  "league_id": "1389331009794744320",
+  "name": "Tyler Warren",
+  "pos": "TE",
+  "nfl_team": "IND",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-9480",
+  "league_id": "1389331009794744320",
+  "name": "Brenton Strange",
+  "pos": "TE",
+  "nfl_team": "JAX",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13349",
+  "league_id": "1389331009794744320",
+  "name": "Eli Stowers",
+  "pos": "TE",
+  "nfl_team": "PHI",
+  "age": 23,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-4046",
+  "league_id": "1389331009794744320",
+  "name": "Patrick Mahomes",
+  "pos": "QB",
+  "nfl_team": "KC",
+  "age": 31,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13347",
+  "league_id": "1389331009794744320",
+  "name": "Demond Claiborne",
+  "pos": "RB",
+  "nfl_team": "MIN",
+  "age": 23,
+  "slot": "taxi",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1389331009794744320-11635",
+  "league_id": "1389331009794744320",
+  "name": "Ladd McConkey",
+  "pos": "WR",
+  "nfl_team": "LAC",
+  "age": 25,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1389331009794744320-6130",
+  "league_id": "1389331009794744320",
+  "name": "Devin Singletary",
+  "pos": "RB",
+  "nfl_team": "NYG",
+  "age": 29,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13421",
+  "league_id": "1389331009794744320",
+  "name": "Eli Raridon",
+  "pos": "TE",
+  "nfl_team": "NE",
+  "age": 22,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-13270",
+  "league_id": "1389331009794744320",
+  "name": "CJ Daniels",
+  "pos": "WR",
+  "nfl_team": "LAR",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-11557",
+  "league_id": "1389331009794744320",
+  "name": "Joe Milton",
+  "pos": "QB",
+  "nfl_team": "PHI",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1389331009794744320-7553",
+  "league_id": "1389331009794744320",
+  "name": "Kyle Pitts Sr.",
+  "pos": "TE",
+  "nfl_team": "ATL",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-8155",
+  "league_id": "1357944059481579520",
+  "name": "Breece Hall",
+  "pos": "RB",
+  "nfl_team": "NYJ",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-7002",
+  "league_id": "1357944059481579520",
+  "name": "Juwan Johnson",
+  "pos": "TE",
+  "nfl_team": "NO",
+  "age": 30,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-13289",
+  "league_id": "1357944059481579520",
+  "name": "Drew Allar",
+  "pos": "QB",
+  "nfl_team": "PIT",
+  "age": 22,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-11783",
+  "league_id": "1357944059481579520",
+  "name": "Ryan Flournoy",
+  "pos": "WR",
+  "nfl_team": "DAL",
+  "age": 27,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-11560",
+  "league_id": "1357944059481579520",
+  "name": "Caleb Williams",
+  "pos": "QB",
+  "nfl_team": "CHI",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-9500",
+  "league_id": "1357944059481579520",
+  "name": "Josh Downs",
+  "pos": "WR",
+  "nfl_team": "KC",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-9754",
+  "league_id": "1357944059481579520",
+  "name": "Quentin Johnston",
+  "pos": "WR",
+  "nfl_team": "LAC",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-7571",
+  "league_id": "1357944059481579520",
+  "name": "Rashod Bateman",
+  "pos": "WR",
+  "nfl_team": "BAL",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-13337",
+  "league_id": "1357944059481579520",
+  "name": "Emmett Johnson",
+  "pos": "RB",
+  "nfl_team": "KC",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-12526",
+  "league_id": "1357944059481579520",
+  "name": "Tetairoa McMillan",
+  "pos": "WR",
+  "nfl_team": "CAR",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-13269",
+  "league_id": "1357944059481579520",
+  "name": "Fernando Mendoza",
+  "pos": "QB",
+  "nfl_team": "LV",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-13394",
+  "league_id": "1357944059481579520",
+  "name": "Josh Cameron",
+  "pos": "WR",
+  "nfl_team": "JAX",
+  "age": 23,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-8148",
+  "league_id": "1357944059481579520",
+  "name": "Jameson Williams",
+  "pos": "WR",
+  "nfl_team": "DET",
+  "age": 25,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-11627",
+  "league_id": "1357944059481579520",
+  "name": "Troy Franklin",
+  "pos": "WR",
+  "nfl_team": "DEN",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-9226",
+  "league_id": "1357944059481579520",
+  "name": "De'Von Achane",
+  "pos": "RB",
+  "nfl_team": "MIA",
+  "age": 25,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1357944059481579520-12482",
+  "league_id": "1357944059481579520",
+  "name": "Savion Williams",
+  "pos": "WR",
+  "nfl_team": "GB",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-7083",
+  "league_id": "1357944059481579520",
+  "name": "Tyler Huntley",
+  "pos": "QB",
+  "nfl_team": "BAL",
+  "age": 28,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1357944059481579520-13330",
+  "league_id": "1357944059481579520",
+  "name": "Kenyon Sadiq",
+  "pos": "TE",
+  "nfl_team": "NYJ",
+  "age": 21,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-4881",
+  "league_id": "1357944059481579520",
+  "name": "Lamar Jackson",
+  "pos": "QB",
+  "nfl_team": "BAL",
+  "age": 29,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1357944059481579520-12519",
+  "league_id": "1357944059481579520",
+  "name": "Luther Burden III",
+  "pos": "WR",
+  "nfl_team": "CHI",
+  "age": 22,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1357944059481579520-6801",
+  "league_id": "1357944059481579520",
+  "name": "Tee Higgins",
+  "pos": "WR",
+  "nfl_team": "CIN",
+  "age": 27,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-12524",
+  "league_id": "1357944059481579520",
+  "name": "Shedeur Sanders",
+  "pos": "QB",
+  "nfl_team": "CLE",
+  "age": 24,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-11635",
+  "league_id": "1357944059481579520",
+  "name": "Ladd McConkey",
+  "pos": "WR",
+  "nfl_team": "LAC",
+  "age": 25,
+  "slot": "active",
+  "injury": "Questionable"
+ },
+ {
+  "row_id": "1357944059481579520-5870",
+  "league_id": "1357944059481579520",
+  "name": "Daniel Jones",
+  "pos": "QB",
+  "nfl_team": "IND",
+  "age": 29,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-10222",
+  "league_id": "1357944059481579520",
+  "name": "Jayden Reed",
+  "pos": "WR",
+  "nfl_team": "GB",
+  "age": 26,
+  "slot": "IR",
+  "injury": "IR"
+ },
+ {
+  "row_id": "1357944059481579520-12517",
+  "league_id": "1357944059481579520",
+  "name": "Colston Loveland",
+  "pos": "TE",
+  "nfl_team": "CHI",
+  "age": 22,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-11557",
+  "league_id": "1357944059481579520",
+  "name": "Joe Milton",
+  "pos": "QB",
+  "nfl_team": "PHI",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-8134",
+  "league_id": "1357944059481579520",
+  "name": "Khalil Shakir",
+  "pos": "WR",
+  "nfl_team": "BUF",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-13301",
+  "league_id": "1357944059481579520",
+  "name": "Antonio Williams",
+  "pos": "WR",
+  "nfl_team": "WAS",
+  "age": 22,
+  "slot": "taxi",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-11579",
+  "league_id": "1357944059481579520",
+  "name": "Audric Estime",
+  "pos": "RB",
+  "nfl_team": "NO",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-7553",
+  "league_id": "1357944059481579520",
+  "name": "Kyle Pitts Sr.",
+  "pos": "TE",
+  "nfl_team": "ATL",
+  "age": 26,
+  "slot": "active",
+  "injury": ""
+ },
+ {
+  "row_id": "1357944059481579520-12493",
+  "league_id": "1357944059481579520",
+  "name": "Oronde Gadsden",
+  "pos": "TE",
+  "nfl_team": "LAC",
+  "age": 23,
+  "slot": "active",
+  "injury": ""
+ }
+]
