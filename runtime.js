@@ -71,6 +71,18 @@
       .catch(function (e) { console.error(e); store[id] = { status: "error", data: [], message: String(e), meta: [] }; });
   }
 
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+
+  // Tell the page how tall the sticky bar is, so tier headings can stick right under it on phones.
+  function measure() {
+    var c = document.getElementById("rb-chips"), r = document.getElementById("rookie-board");
+    if (c && r) r.style.setProperty("--rb-stick", (c.offsetHeight || 0) + "px");
+  }
+  window.addEventListener("resize", measure);
+  window.rbMeasure = measure;
+
   window.addEventListener("DOMContentLoaded", function () {
     Promise.all(SOURCES.map(load)).then(function () {
       notify();

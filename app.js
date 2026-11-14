@@ -1,6 +1,7 @@
 (function () {
   var P0 = dash.params() || {};
-  var state = { pos: "TOP", q: "", declare: "", open: null, week: null, focus: null,
+  var VIEWS0 = ["MYD", "TOP", "QB", "RB", "WR", "TE", "FAV", "MOCK", "WEEK"];
+  var state = { pos: VIEWS0.indexOf(P0.view) >= 0 ? P0.view : "TOP", q: "", declare: "", open: null, week: null, focus: null,
     crest: "seal", favSort: P0.favSort || "overall",
     league: P0.league || null,
     favs: new Set(Array.isArray(P0.favs) ? P0.favs : []), unfavs: new Set(Array.isArray(P0.unfavs) ? P0.unfavs : []) };
@@ -114,7 +115,7 @@
   function crestText(svg, ab, x, y, size, ink, extra) {
     var a = {
       x: String(x), y: String(y), "text-anchor": "middle", "dominant-baseline": "middle",
-      "font-family": "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif",
+      "font-family": "Impact, Haettenschweiler, Anton, 'Arial Narrow Bold', sans-serif",
       "font-size": String(size), "letter-spacing": "0.5", fill: ink, stroke: "#05080e", "stroke-width": "4.5",
       "paint-order": "stroke", "stroke-linejoin": "round"
     };
@@ -471,14 +472,7 @@
         it.appendChild(cmark(el("div", "dt", r.detail), "detail", r.change_id));
         if (r.player_id) {
           it.style.cursor = "pointer";
-          it.addEventListener("click", function () {
-            var pd = dash.data("players");
-            var p = pd.status === "ok" ? pd.data.filter(function (x) { return x.id === r.player_id; })[0] : null;
-            if (!p) return;
-            state.pos = p.pos; state.open = p.id; state.q = ""; document.getElementById("rb-search").value = "";
-            render();
-            var rr = document.getElementById("row-" + p.id); if (rr) rr.scrollIntoView({ block: "center" });
-          });
+          it.addEventListener("click", function () { openPlayer(r.player_id); });
         }
         card.appendChild(it);
       });
@@ -492,6 +486,7 @@
     var pd = dash.data("players");
     var p = pd.status === "ok" ? pd.data.filter(function (x) { return x.id === pid; })[0] : null;
     if (!p) return;
+    if (isMobile()) { state.open = p.id; render(); return; } // phones: open the card as a sheet, stay on this tab
     state.pos = p.pos; state.open = p.id; state.q = ""; document.getElementById("rb-search").value = "";
     render();
     var rr = document.getElementById("row-" + p.id); if (rr) rr.scrollIntoView({ block: "center" });
@@ -916,7 +911,7 @@
     box.appendChild(pg);
   }
 
-  function render() {
+  function renderInner() {
     var pr = dash.data("players"), cr = dash.data("career");
     var list = document.getElementById("rb-list");
     var upd = document.getElementById("board-updated");
@@ -960,6 +955,7 @@
       if (state.q && (r.name + " " + r.school).toLowerCase().indexOf(state.q) < 0) return false;
       return true;
     }).sort(fav ? FAVSORT[state.favSort] || FAVSORT.overall : function (a, b) { return top ? a.overall_rank - b.overall_rank : a.rank - b.rank; });
+    state.navIds = rows.map(function (r) { return r.id; });
     if (!rows.length) {
       document.getElementById("rb-focus").hidden = true;
       renderCrestPick(pr.data.filter(function (r) { return r.overall_rank === 1; })[0] || pr.data[0]);
@@ -1053,13 +1049,163 @@
       row.addEventListener("click", openRow);
       row.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openRow(); } });
       list.appendChild(row);
-      if (state.open === p.id) {
+      if (state.open === p.id && !isMobile()) {
         var cRows = careerAll.filter(function (r) { return r.player_id === p.id; })
           .sort(function (a, b) { return a.season - b.season; });
         list.appendChild(detail(p, cRows));
       }
     });
   }
+
+  // ---------- phone layout: bottom nav, board chips, full-screen player card ----------
+  var mq = window.matchMedia("(max-width: 680px)");
+  function isMobile() { return mq.matches; }
+  var BOARD = ["TOP", "QB", "RB", "WR", "TE"];
+  var lastBoard = BOARD.indexOf(state.pos) >= 0 ? state.pos : "TOP";
+  var savedView = state.pos;
+  var root = document.getElementById("rookie-board");
+
+  function icon(d) {
+    var s = sv("svg", { viewBox: "0 0 24 24", width: "22", height: "22", fill: "none", stroke: "currentColor",
+      "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" });
+    sv("path", { d: d }, s);
+    return s;
+  }
+  function setView(p) {
+    if (state.pos !== p) { state.pos = p; state.open = null; state.focus = null; render(); }
+    window.scrollTo(0, 0);
+  }
+
+  // board chips (Top 35 / QB / RB / WR / TE) live in the sticky bar on phones
+  var chips = el("div", "rb-chips");
+  chips.id = "rb-chips";
+  chips.setAttribute("role", "tablist");
+  chips.setAttribute("aria-label", "Board");
+  BOARD.forEach(function (p) {
+    var b = el("button", "rb-chip", p === "TOP" ? "Top 35" : p);
+    b.type = "button"; b.id = "chip-" + p; b.setAttribute("role", "tab");
+    b.addEventListener("click", function () { setView(p); });
+    chips.appendChild(b);
+  });
+  var controls = tabs.parentNode;
+  controls.parentNode.insertBefore(chips, controls);
+
+  var NAV = [
+    ["BOARD", "Board", "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"],
+    ["MYD", "My draft", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"],
+    ["MOCK", "Mock", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"],
+    ["FAV", "Favorites", "M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.9 6.6 19.8l1.1-6.1L3.2 9.4l6.1-.8z"],
+    ["WEEK", "This week", "M3 17l6-6 4 4 8-8M15 7h6v6"]
+  ];
+  var nav = el("nav", "rb-nav");
+  nav.id = "rb-nav";
+  nav.setAttribute("aria-label", "Sections");
+  NAV.forEach(function (n) {
+    var b = el("button", "rb-navbtn");
+    b.type = "button"; b.id = "nav-" + n[0];
+    b.appendChild(icon(n[2]));
+    b.appendChild(el("span", "lb", n[1]));
+    if (n[0] === "FAV") b.appendChild(el("span", "bdg", ""));
+    b.addEventListener("click", function () { setView(n[0] === "BOARD" ? lastBoard : n[0]); });
+    nav.appendChild(b);
+  });
+  root.appendChild(nav);
+
+  // full-screen player card
+  var sheet = el("div", "rb-sheet");
+  sheet.id = "rb-sheet"; sheet.hidden = true;
+  sheet.setAttribute("role", "dialog"); sheet.setAttribute("aria-modal", "true");
+  var bar = el("div", "rb-sheetbar");
+  var bClose = el("button", "rb-sbtn close", "✕ Close"); bClose.type = "button";
+  var bStar = el("button", "rb-sbtn star", "☆"); bStar.type = "button";
+  var sPos = el("span", "rb-spos", "");
+  var bPrev = el("button", "rb-sbtn", "‹ Prev"); bPrev.type = "button";
+  var bNext = el("button", "rb-sbtn", "Next ›"); bNext.type = "button";
+  [bClose, bStar, sPos, bPrev, bNext].forEach(function (x) { bar.appendChild(x); });
+  var sBody = el("div", "rb-sheetbody");
+  sheet.appendChild(bar); sheet.appendChild(sBody);
+  root.appendChild(sheet);
+  var sheetPushed = false;
+  function stepPlayer(d) {
+    var ids = state.navIds || [], i = ids.indexOf(state.open);
+    if (i < 0 || !ids[i + d]) return;
+    state.open = ids[i + d]; state.focus = state.open; render();
+  }
+  bClose.addEventListener("click", function () { state.open = null; render(); });
+  bPrev.addEventListener("click", function () { stepPlayer(-1); });
+  bNext.addEventListener("click", function () { stepPlayer(1); });
+  bStar.addEventListener("click", function () { if (state.open) toggleFav(state.open); });
+  window.addEventListener("popstate", function () {
+    if (sheetPushed) { sheetPushed = false; state.open = null; render(); }
+  });
+  // swipe left / right on the card to move through the list
+  var tx = null, ty = null;
+  sheet.addEventListener("touchstart", function (e) {
+    var t = e.target;
+    while (t && t !== sheet) { if (t.classList && t.classList.contains("rb-tablewrap")) { tx = null; return; } t = t.parentNode; }
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+  }, { passive: true });
+  sheet.addEventListener("touchend", function (e) {
+    if (tx == null) return;
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    tx = null;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) stepPlayer(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  function closeSheet() {
+    if (sheet.hidden) return;
+    sheet.hidden = true;
+    sheet.removeAttribute("data-pid");
+    document.documentElement.classList.remove("rb-sheet-open");
+    if (sheetPushed) { sheetPushed = false; if (history.state && history.state.rbSheet) history.back(); }
+  }
+  function syncSheet() {
+    var pd = dash.data("players"), cr = dash.data("career");
+    var p = isMobile() && state.open && pd.status === "ok" ? pd.data.filter(function (x) { return x.id === state.open; })[0] : null;
+    if (!p) { closeSheet(); return; }
+    var cRows = (cr.status === "ok" ? cr.data : []).filter(function (r) { return r.player_id === p.id; })
+      .sort(function (a, b) { return a.season - b.season; });
+    sBody.textContent = "";
+    sBody.appendChild(detail(p, cRows));
+    var ids = state.navIds || [], i = ids.indexOf(p.id);
+    sPos.textContent = i >= 0 ? (i + 1) + " / " + ids.length : p.pos + p.rank;
+    bPrev.hidden = bNext.hidden = i < 0;
+    bPrev.disabled = i <= 0; bNext.disabled = i < 0 || i >= ids.length - 1;
+    bStar.textContent = isFav(p.id) ? "★" : "☆";
+    bStar.classList.toggle("on", isFav(p.id));
+    bStar.setAttribute("aria-label", (isFav(p.id) ? "Remove " : "Add ") + p.name + (isFav(p.id) ? " from" : " to") + " favorites");
+    if (sheet.getAttribute("data-pid") !== p.id) sBody.scrollTop = 0;
+    sheet.setAttribute("data-pid", p.id);
+    sheet.setAttribute("aria-label", p.name + " scouting card");
+    sheet.hidden = false;
+    document.documentElement.classList.add("rb-sheet-open");
+    if (!sheetPushed) { try { history.pushState({ rbSheet: true }, ""); sheetPushed = true; } catch (e) {} }
+  }
+  function syncNav() {
+    var onBoard = BOARD.indexOf(state.pos) >= 0;
+    if (onBoard) lastBoard = state.pos;
+    NAV.forEach(function (n) {
+      var on = n[0] === "BOARD" ? onBoard : state.pos === n[0];
+      var b = document.getElementById("nav-" + n[0]);
+      if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    });
+    BOARD.forEach(function (p) { document.getElementById("chip-" + p).setAttribute("aria-selected", String(p === state.pos)); });
+    var pr = dash.data("players");
+    var nf = pr.status === "ok" ? favCount(pr.data) : 0;
+    var bd = document.querySelector("#nav-FAV .bdg");
+    bd.textContent = nf ? String(nf) : ""; bd.hidden = !nf;
+  }
+
+  function render() {
+    state.navIds = [];
+    renderInner();
+    root.setAttribute("data-view", state.pos);
+    if (state.pos !== savedView) { savedView = state.pos; dash.setParams({ view: state.pos }); }
+    syncNav();
+    syncSheet();
+    if (window.rbMeasure) window.rbMeasure();
+  }
+  if (mq.addEventListener) mq.addEventListener("change", function () { render(); });
 
   dash.onData(render);
 })();

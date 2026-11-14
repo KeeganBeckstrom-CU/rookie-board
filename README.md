@@ -6,4 +6,6 @@ Live site: https://keeganbeckstrom-cu.github.io/rookie-board/
 
 - `index.html`, `style.css`, `app.js` – the board
 - `runtime.js` – loads the JSON in `data/` and remembers favorites/filters in the browser
+- `manifest.webmanifest`, `sw.js`, `icons/` – app icon, home-screen install and offline support
+- `fonts/` – Anton and Roboto Condensed (SIL Open Font License), used where a phone lacks Impact / Arial Narrow
 - `data/*.json` – the board's data; replace these files to update the site
