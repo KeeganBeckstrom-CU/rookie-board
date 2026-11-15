@@ -77,8 +77,8 @@
 
   // Tell the page how tall the sticky bar is, so tier headings can stick right under it on phones.
   function measure() {
-    var c = document.getElementById("rb-chips"), r = document.getElementById("rookie-board");
-    if (c && r) r.style.setProperty("--rb-stick", (c.offsetHeight || 0) + "px");
+    var c = document.getElementById("mx-chips"), r = document.getElementById("rookie-board");
+    if (c && r) r.style.setProperty("--mx-stick", (c.offsetHeight || 0) + "px");
   }
   window.addEventListener("resize", measure);
   window.rbMeasure = measure;
@@ -93,8 +93,8 @@
       var thru = pl.map(function (r) { return r.s26_through || ""; }).sort().pop();
       if (el && wk) {
         var f = window.d3.utcFormat("%b %-d, %Y");
-        el.textContent = "Board last updated " + f(new Date(wk + "T12:00:00Z")) +
-          (thru ? "; stats through " + f(new Date(thru + "T12:00:00Z")) + "." : ".");
+        var g = window.d3.utcFormat("%b %-d");
+        el.textContent = "Updated " + g(new Date(wk + "T12:00:00Z")) + (thru ? " · stats through " + g(new Date(thru + "T12:00:00Z")) : "");
       }
     });
   });

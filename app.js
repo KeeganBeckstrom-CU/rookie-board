@@ -1,110 +1,53 @@
+/* 2027 Rookie Board: game-style draft screens. */
 (function () {
+  "use strict";
   var P0 = dash.params() || {};
-  var VIEWS0 = ["MYD", "TOP", "QB", "RB", "WR", "TE", "FAV", "MOCK", "INJ", "WEEK"];
-  var state = { pos: VIEWS0.indexOf(P0.view) >= 0 ? P0.view : "TOP", q: "", declare: "", open: null, week: null, focus: null,
-    crest: "seal", favSort: P0.favSort || "overall",
-    league: P0.league || null,
-    favs: new Set(Array.isArray(P0.favs) ? P0.favs : []), unfavs: new Set(Array.isArray(P0.unfavs) ? P0.unfavs : []) };
-  var POS = ["QB", "RB", "WR", "TE"];
   var VIEWS = ["MYD", "TOP", "QB", "RB", "WR", "TE", "FAV", "MOCK", "INJ", "WEEK"];
-  var TABNAME = { MYD: "My draft", TOP: "Top 35", FAV: "★ Favorites", MOCK: "Mock draft", INJ: "Injuries", WEEK: "This week" };
-  var LABEL = { TOP: "Overall top 35 · superflex PPR", FAV: "Favorites", QB: "Quarterbacks", RB: "Running backs", WR: "Wide receivers", TE: "Tight ends" };
-  var COLS = {
-    QB: [["games","G"],["cmp","Cmp"],["att","Att"],["pass_yds","Pass Yds"],["pass_td","Pass TD"],["int","Int"],["rush_att","Rush"],["rush_yds","Rush Yds"],["rush_td","Rush TD"]],
-    RB: [["games","G"],["rush_att","Att"],["rush_yds","Rush Yds"],["rush_td","Rush TD"],["rec","Rec"],["rec_yds","Rec Yds"],["rec_td","Rec TD"]],
-    WR: [["games","G"],["rec","Rec"],["rec_yds","Rec Yds"],["rec_td","Rec TD"],["rush_att","Rush"],["rush_yds","Rush Yds"],["rush_td","Rush TD"]],
-    TE: [["games","G"],["rec","Rec"],["rec_yds","Rec Yds"],["rec_td","Rec TD"]]
+  var BOARD = ["TOP", "QB", "RB", "WR", "TE"];
+  var POS = ["QB", "RB", "WR", "TE"];
+  var TABN = { MYD: "My draft", TOP: "Top 35", QB: "QB", RB: "RB", WR: "WR", TE: "TE", FAV: "Favorites", MOCK: "Mock draft", INJ: "Injuries", WEEK: "This week" };
+  var TITLE = { MYD: "My draft", TOP: "Top 35 · Superflex PPR", QB: "Quarterbacks", RB: "Running backs", WR: "Wide receivers", TE: "Tight ends",
+    FAV: "Favorites", MOCK: "Mock draft", INJ: "Injury report", WEEK: "Board changes" };
+  var CTABS = [["report", "Scouting report"], ["grades", "Grades"], ["prod", "Production"], ["career", "Career"], ["notes", "Notes"]];
+  var POSNAME = { QB: "QB", RB: "RB", WR: "WR", TE: "TE" };
+
+  var state = {
+    view: VIEWS.indexOf(P0.view) >= 0 ? P0.view : "TOP",
+    q: "", declare: "", tag: "", favSort: P0.favSort || "overall",
+    league: P0.league || null, week: null, open: null,
+    cardTab: CTABS.some(function (t) { return t[0] === P0.cardTab; }) ? P0.cardTab : "report",
+    favs: new Set(Array.isArray(P0.favs) ? P0.favs : []), unfavs: new Set(Array.isArray(P0.unfavs) ? P0.unfavs : []),
+    navIds: []
   };
-  var HEAD26 = { TOP: "yds / TD", FAV: "yds / TD", QB: "Pass yds / TD", RB: "Rush yds / TD", WR: "Rec yds / TD", TE: "Rec yds / TD" };
+  var M = null;
+  var root = document.getElementById("rookie-board");
+  var mq = window.matchMedia("(max-width: 680px)");
 
-  // Injury status, read from the board's weekly notes: the newest injury note for each prospect on the board.
-  dash.calc("injuries", {
-    title: "Injury status",
-    description: "Newest injury note per prospect from the weekly board changes (injury notes, plus fallers whose note names an injury). Status comes from the note's wording: out for the season, out, expected back, or back.",
-    inputs: ["changes", "players"],
-    fn: function (changes, players) {
-      var BODY = /torn|broken|fibula|\bACL\b|\bMCL\b|surgery|concussion|season-ending|out for the (season|year)|shoulder|knee|ankle|hamstring|\bfoot\b/i;
-      var SEASON = /out for the (season|year)|season-ending|done for the season|ends his (year|season)|torn (acl|mcl)|broken/i;
-      var SOON = /expected back|may return|could return|day[- ]to[- ]day|questionable/i;
-      var BACK = /^(back\b|season debut|returning|returned)|back on the field|back early|back from/i;
-      var best = {};
-      changes.forEach(function (c) {
-        if (!c.player_id) return;
-        var text = c.headline + " " + c.detail;
-        if (!(c.type === "injury" || (c.type === "faller" && BODY.test(text)))) return;
-        var b = best[c.player_id];
-        if (!b || c.week > b.week || (c.week === b.week && c.type === "injury" && b.type !== "injury")) best[c.player_id] = c;
-      });
-      var ORDER = { season: 0, out: 1, soon: 2, back: 3 };
-      return players.filter(function (p) { return best[p.id]; }).map(function (p) {
-        var c = best[p.id], text = c.headline + " " + c.detail;
-        var code = SEASON.test(text) ? "season" : BACK.test(c.headline) ? "back" : SOON.test(text) ? "soon" : "out";
-        return { id: p.id, name: p.name, pos: p.pos, rank: p.rank, overall_rank: p.overall_rank, code: code,
-          status: { season: "Out for season", out: "Out", soon: "Questionable", back: "Back" }[code],
-          tag: { season: "OUT-YR", out: "OUT", soon: "Q", back: "" }[code],
-          headline: c.type === "injury" || BODY.test(c.headline) ? c.headline : "", detail: c.detail, week: c.week };
-      }).sort(function (a, b) { return ORDER[a.code] - ORDER[b.code] || (a.overall_rank || 999) - (b.overall_rank || 999) || a.rank - b.rank; });
-    }
-  });
-  function injOf(id) {
-    var d = dash.data("injuries");
-    if (d.status !== "ok" || !d.data) return null;
-    return d.data.filter(function (x) { return x.id === id; })[0] || null;
-  }
-  function injDate(w) { return d3.utcFormat("%b %-d")(new Date(w + "T12:00:00Z")); }
-  // small tag for lists; nothing for players who are back
-  function injTag(id) {
-    var j = injOf(id);
-    if (!j || !j.tag) return null;
-    var t = el("span", "rb-inj " + j.code, j.tag);
-    t.title = j.status + " (as of " + injDate(j.week) + "): " + (j.headline || j.detail);
-    t.setAttribute("aria-label", j.status);
-    return t;
-  }
-
-  dash.calc("rank_moves", {
-    title: "Rank change since last week",
-    description: "Position rank last week minus position rank now (positive = moved up); NEW when the player wasn't on last week's board.",
-    inputs: ["players"],
-    fn: function (players) {
-      return players.map(function (p) {
-        return { id: p.id, move: p.prev_rank == null ? "NEW" : p.prev_rank - p.rank };
-      });
-    }
-  });
-
+  // ---------- small helpers ----------
   function el(tag, cls, text) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
     if (text != null) e.textContent = text;
     return e;
   }
-  function mark(e, field, id, src) {
-    e.setAttribute("data-source", src || "players");
-    e.setAttribute("data-field", field);
-    e.setAttribute("data-where", "id=" + encodeURIComponent(id));
-    return e;
-  }
+  function add(parent) { for (var i = 1; i < arguments.length; i++) if (arguments[i]) parent.appendChild(arguments[i]); return parent; }
   function fmt(v) { return v == null || v === "" ? "—" : (typeof v === "number" ? v.toLocaleString() : String(v)); }
+  function num(v, d) { if (v == null || !isFinite(v)) return "—"; return d ? Number(v).toFixed(d) : Math.round(v).toLocaleString(); }
+  function ord(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function day(w, withYear) { return d3.utcFormat(withYear ? "%b %-d, %Y" : "%b %-d")(new Date(w + "T12:00:00Z")); }
+  function firstLast(name) {
+    var parts = String(name).split(" ");
+    var suffix = /^(jr\.?|sr\.?|ii|iii|iv)$/i.test(parts[parts.length - 1]) && parts.length > 2 ? " " + parts.pop() : "";
+    var first = parts.length > 1 ? parts.shift() : "";
+    return [first, parts.join(" ") + suffix];
+  }
+  function projShort(t) {
+    if (!t) return "—";
+    var s = String(t).split("(")[0].replace(/\bif he declares\b/i, "").replace(/[;,.\s]+$/, "").trim();
+    return s || "—";
+  }
 
-  var tabs = document.getElementById("pos-tabs");
-  VIEWS.forEach(function (p) {
-    var b = el("button", "rb-tab" + (TABNAME[p] ? " alt" : ""));
-    b.type = "button"; b.id = "tab-" + p; b.setAttribute("role", "tab");
-    b.appendChild(el("span", null, TABNAME[p] || p));
-    b.appendChild(el("span", "n", ""));
-    b.addEventListener("click", function () { state.pos = p; state.open = null; state.focus = null; render(); });
-    tabs.appendChild(b);
-  });
-  document.getElementById("rb-search").addEventListener("input", function (e) { state.q = e.target.value.toLowerCase(); render(); });
-  document.getElementById("rb-declare").addEventListener("change", function (e) { state.declare = e.target.value; render(); });
-  document.getElementById("rb-tag").addEventListener("change", function (e) { state.tag = e.target.value; render(); });
-  var favSortSel = document.getElementById("rb-favsort");
-  favSortSel.value = state.favSort;
-  favSortSel.addEventListener("change", function (e) { state.favSort = e.target.value; dash.setParams({ favSort: e.target.value }); render(); });
-
-
-  // A lightened version of the school's color, so dark school colors still read on the dark board.
+  // ---------- colors ----------
   function hexRgb(h) {
     h = String(h || "").replace("#", "");
     if (h.length === 3) h = h.split("").map(function (c) { return c + c; }).join("");
@@ -113,1112 +56,1086 @@
   }
   function lum(c) { return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; }
   function sat(c) { var mx = Math.max.apply(null, c), mn = Math.min.apply(null, c); return mx ? (mx - mn) / mx : 0; }
-  function schoolTint(p) {
-    var a = hexRgb(p.school_color), b = hexRgb(p.school_color2);
-    var base = a;
-    // near-black, near-white or gray primaries fall back to the second color when it has more color
-    if (a && b && (sat(a) < 0.2) && sat(b) > sat(a)) base = b;
-    if (!base) base = [143, 163, 191];
-    var l = lum(base);
-    var mix = l < 0.2 ? 0.55 : l < 0.4 ? 0.42 : l < 0.6 ? 0.28 : 0.12;
-    var lt = base.map(function (v) { return Math.round(v + (255 - v) * mix); });
-    var hex = "#" + lt.map(function (v) { return ("0" + v.toString(16)).slice(-2); }).join("");
-    var rgba = function (al) { return "rgba(" + lt.join(",") + "," + al + ")"; };
-    return { hex: hex, tint: rgba(0.34), tint2: rgba(0.14), tintH: rgba(0.48) };
+  function shade(rgb, f) {
+    return "#" + rgb.map(function (v) {
+      var x = f < 0 ? v * (1 + f) : v + (255 - v) * f;
+      return ("0" + Math.round(Math.max(0, Math.min(255, x))).toString(16)).slice(-2);
+    }).join("");
   }
-  function applyTint(node, p) {
-    var t = schoolTint(p);
-    node.classList.add("tinted");
-    node.style.setProperty("--tl", t.hex);
-    node.style.setProperty("--tint", t.tint);
-    node.style.setProperty("--tint-2", t.tint2);
-    node.style.setProperty("--tint-h", t.tintH);
-    node.style.setProperty("--sc1", p.school_color || "#23395a");
-    node.style.setProperty("--sc2", p.school_color2 || "#ffc72c");
+  // the school color that reads best as a tint on the dark navy screens
+  function tintColor(p) {
+    var a = hexRgb(p.school_color), b = hexRgb(p.school_color2);
+    var base = a || [52, 70, 95];
+    if (a && b && sat(a) < 0.2 && sat(b) > sat(a)) base = b;
+    if (lum(base) < 0.12) base = base.map(function (v) { return Math.min(255, v + 40); });
+    return shade(base, 0);
+  }
+  function setTint(node, p) {
+    node.style.setProperty("--sc1", tintColor(p));
+    node.style.setProperty("--sc2", p.school_color2 || "#c9a227");
     return node;
   }
 
-  // Original crests in five styles, each in the school's two colors with its abbreviation (no real logos).
-  var SVGNS = "http://www.w3.org/2000/svg", crestN = 0;
-  var CRESTS = [
-    ["shield", "Varsity shield"], ["seal", "Stadium seal"], ["pennant", "Felt pennant"],
-    ["hex", "Carbon hex"], ["patch", "Stitched patch"]
-  ];
+  // ---------- SVG art ----------
+  var SVGNS = "http://www.w3.org/2000/svg", uid = 0;
   function sv(tag, attrs, parent) {
     var n = document.createElementNS(SVGNS, tag);
     for (var k in attrs) n.setAttribute(k, attrs[k]);
     if (parent) parent.appendChild(n);
     return n;
   }
-  function shade(rgb, f) { // f < 0 darkens, f > 0 lightens
-    return "#" + rgb.map(function (v) {
-      var x = f < 0 ? v * (1 + f) : v + (255 - v) * f;
-      return ("0" + Math.round(Math.max(0, Math.min(255, x))).toString(16)).slice(-2);
-    }).join("");
-  }
-  function contrast(a, b) { return Math.abs(lum(a) - lum(b)); }
-  function crestText(svg, ab, x, y, size, ink, extra) {
-    var a = {
-      x: String(x), y: String(y), "text-anchor": "middle", "dominant-baseline": "middle",
-      "font-family": "Impact, Haettenschweiler, Anton, 'Arial Narrow Bold', sans-serif",
-      "font-size": String(size), "letter-spacing": "0.5", fill: ink, stroke: "#05080e", "stroke-width": "4.5",
-      "paint-order": "stroke", "stroke-linejoin": "round"
-    };
-    for (var k in (extra || {})) a[k] = extra[k];
-    var t = sv("text", a, svg);
-    t.textContent = ab;
-    return t;
-  }
   function star(svg, cx, cy, r, fill) {
     var pts = [];
     for (var i = 0; i < 10; i++) {
-      var ang = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
-      pts.push((cx + rr * Math.cos(ang)).toFixed(1) + "," + (cy + rr * Math.sin(ang)).toFixed(1));
+      var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
+      pts.push((cx + rr * Math.cos(a)).toFixed(1) + "," + (cy + rr * Math.sin(a)).toFixed(1));
     }
     return sv("polygon", { points: pts.join(" "), fill: fill, stroke: "#05080e", "stroke-width": "1" }, svg);
   }
-  function badge(p, big, style) {
-    style = style || state.crest || "shield";
-    var c1 = hexRgb(p.school_color) || [74, 81, 96];
-    var c2 = hexRgb(p.school_color2) || [255, 255, 255];
-    if (contrast(c1, c2) < 0.12) c2 = lum(c1) > 0.5 ? [10, 15, 24] : [255, 255, 255];
-    var ink = contrast(c1, c2) >= contrast(c1, [255, 255, 255]) ? shade(c2, 0) : "#ffffff";
-    var id = "crest" + (++crestN);
-    var wrap = el("div", "rb-badge rb-crest cs-" + style + (big ? " lg" : ""));
-    wrap.setAttribute("aria-hidden", "true");
-    wrap.style.setProperty("--glow", schoolTint(p).hex);
-    var svg = sv("svg", { viewBox: "0 0 100 116", width: "100%", height: "100%" }, wrap);
+  // original round seal in the school's two colors with its abbreviation (no real logos)
+  function seal(p, opts) {
+    opts = opts || {};
+    var c1 = hexRgb(p.school_color) || [74, 81, 96], c2 = hexRgb(p.school_color2) || [255, 255, 255];
+    if (Math.abs(lum(c1) - lum(c2)) < 0.12) c2 = lum(c1) > 0.5 ? [10, 15, 24] : [255, 255, 255];
+    var id = "s" + (++uid), K = "#05080e";
+    var svg = sv("svg", { viewBox: "2 10 100 100", "aria-hidden": "true" });
     var defs = sv("defs", {}, svg);
     var g = sv("linearGradient", { id: id + "f", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
-    sv("stop", { offset: "0", "stop-color": shade(c1, 0.25) }, g);
-    sv("stop", { offset: "0.5", "stop-color": shade(c1, 0) }, g);
-    sv("stop", { offset: "1", "stop-color": shade(c1, -0.4) }, g);
+    sv("stop", { offset: "0", "stop-color": shade(c1, 0.25) }, g); sv("stop", { offset: ".5", "stop-color": shade(c1, 0) }, g); sv("stop", { offset: "1", "stop-color": shade(c1, -0.4) }, g);
     var t = sv("linearGradient", { id: id + "t", x1: "0", y1: "0", x2: "1", y2: "1" }, defs);
-    sv("stop", { offset: "0", "stop-color": shade(c2, 0.4) }, t);
-    sv("stop", { offset: "0.45", "stop-color": shade(c2, 0) }, t);
-    sv("stop", { offset: "1", "stop-color": shade(c2, -0.35) }, t);
-    var F = "url(#" + id + "f)", T = "url(#" + id + "t)", K = "#05080e";
+    sv("stop", { offset: "0", "stop-color": shade(c2, 0.4) }, t); sv("stop", { offset: ".45", "stop-color": shade(c2, 0) }, t); sv("stop", { offset: "1", "stop-color": shade(c2, -0.35) }, t);
+    var F = "url(#" + id + "f)", T = "url(#" + id + "t)";
+    sv("circle", { cx: "52.5", cy: "60.5", r: "46", fill: K }, svg);
+    sv("circle", { cx: "50", cy: "58", r: "46", fill: T, stroke: K, "stroke-width": "2.5" }, svg);
+    var rIn = opts.big ? 35 : 40;
+    if (opts.big) sv("circle", { cx: "50", cy: "58", r: "41", fill: "none", stroke: K, "stroke-width": "1.4", "stroke-dasharray": "1.5 3.5" }, svg);
+    sv("circle", { cx: "50", cy: "58", r: String(rIn), fill: F, stroke: K, "stroke-width": "2" }, svg);
+    var cl = sv("clipPath", { id: id + "c" }, defs); sv("circle", { cx: "50", cy: "58", r: String(rIn) }, cl);
+    var gg = sv("g", { "clip-path": "url(#" + id + "c)" }, svg);
+    sv("rect", { x: "0", y: "81", width: "100", height: "5", fill: T, opacity: ".9" }, gg);
+    sv("ellipse", { cx: "50", cy: "33", rx: "32", ry: "12", fill: "#fff", opacity: ".10" }, gg);
+    if (opts.big) { star(svg, 12, 58, 5, shade(c1, 0)); star(svg, 88, 58, 5, shade(c1, 0)); }
     var ab = (p.school_abbr || "").slice(0, 5);
-    var fs = ab.length <= 2 ? 40 : ab.length === 3 ? 34 : ab.length === 4 ? 27 : 22;
+    var light = lum(c1) > 0.55;
+    var fs = opts.big ? (ab.length <= 2 ? 36 : ab.length === 3 ? 30 : 25) : (ab.length <= 2 ? 42 : ab.length === 3 ? 35 : 29);
+    var ta = { x: "50", y: "59", "text-anchor": "middle", "dominant-baseline": "middle", "font-family": "Impact, Haettenschweiler, Anton, 'Arial Narrow Bold', sans-serif",
+      "font-size": String(fs), "letter-spacing": "0.5", fill: light ? "#0b0f18" : "#ffffff", stroke: light ? "#ffffff" : K,
+      "stroke-width": opts.big ? "4.5" : "4", "paint-order": "stroke", "stroke-linejoin": "round" };
+    if (ab.length >= 4) { ta.textLength = opts.big ? "50" : "60"; ta.lengthAdjust = "spacingAndGlyphs"; }
+    sv("text", ta, svg).textContent = ab;
+    return svg;
+  }
+  function crest(p, cls) { var w = el("span", "mx-crest" + (cls ? " " + cls : "")); w.appendChild(seal(p)); return w; }
 
-    if (style === "seal") {
-      // readable lettering: white with a heavy black outline, or dark with a white outline on light school colors
-      var light = lum(c1) > 0.55;
-      var sInk = light ? "#0b0f18" : "#ffffff", sStroke = light ? "#ffffff" : K;
-      var sFs = big ? (ab.length <= 2 ? 36 : ab.length === 3 ? 30 : 25) : (ab.length <= 2 ? 42 : ab.length === 3 ? 35 : 29);
-      svg.setAttribute("viewBox", "2 10 100 100");
-      sv("circle", { cx: "52.5", cy: "60.5", r: "46", fill: K }, svg);
-      sv("circle", { cx: "50", cy: "58", r: "46", fill: T, stroke: K, "stroke-width": "2.5" }, svg);
-      var rIn = big ? 35 : 40;
-      if (big) sv("circle", { cx: "50", cy: "58", r: "41", fill: "none", stroke: K, "stroke-width": "1.4", "stroke-dasharray": "1.5 3.5" }, svg);
-      sv("circle", { cx: "50", cy: "58", r: String(rIn), fill: F, stroke: K, "stroke-width": "2" }, svg);
-      var cl = sv("clipPath", { id: id + "c" }, defs); sv("circle", { cx: "50", cy: "58", r: String(rIn) }, cl);
-      var gg = sv("g", { "clip-path": "url(#" + id + "c)" }, svg);
-      sv("rect", { x: "0", y: "81", width: "100", height: "5", fill: T, opacity: ".9" }, gg);
-      sv("ellipse", { cx: "50", cy: "33", rx: "32", ry: "12", fill: "#fff", opacity: ".10" }, gg);
-      var starFill = shade(c1, 0);
-      if (big) { star(svg, 12, 58, 5, starFill); star(svg, 88, 58, 5, starFill); }
-      var tExtra = { stroke: sStroke, "stroke-width": big ? "4.5" : "4", "letter-spacing": "0.5" };
-      if (ab.length >= 4) { tExtra.textLength = big ? "50" : "60"; tExtra.lengthAdjust = "spacingAndGlyphs"; }
-      crestText(svg, ab, 50, 59, sFs, sInk, tExtra);
-    } else if (style === "pennant") {
-      sv("path", { d: "M10 22 L98 56 L10 90 Z", fill: K }, svg);
-      sv("path", { d: "M7 19 L95 53 L7 87 Z", fill: F, stroke: K, "stroke-width": "2.5", "stroke-linejoin": "round" }, svg);
-      sv("rect", { x: "4", y: "15", width: "14", height: "76", rx: "2", fill: T, stroke: K, "stroke-width": "2" }, svg);
-      sv("path", { d: "M22 30 L80 53 L22 76", fill: "none", stroke: T, "stroke-width": "3" }, svg);
-      sv("path", { d: "M7 19 L95 53 L60 40 Z", fill: "#fff", opacity: ".14" }, svg);
-      crestText(svg, ab, 43, 54, fs * 0.72, ink, { transform: "rotate(-4 43 54)", "font-style": "italic" });
-    } else if (style === "hex") {
-      var pat = sv("pattern", { id: id + "p", width: "4", height: "4", patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
-      sv("rect", { width: "2", height: "4", fill: "#000", opacity: ".22" }, pat);
-      sv("polygon", { points: "52.5,6.5 96.5,31.5 96.5,89.5 52.5,114.5 8.5,89.5 8.5,31.5", fill: K }, svg);
-      sv("polygon", { points: "50,4 94,29 94,87 50,112 6,87 6,29", fill: T, stroke: K, "stroke-width": "2.5", "stroke-linejoin": "round" }, svg);
-      sv("polygon", { points: "50,13 86,34 86,82 50,103 14,82 14,34", fill: F, stroke: K, "stroke-width": "1.8", "stroke-linejoin": "round" }, svg);
-      sv("polygon", { points: "50,13 86,34 86,82 50,103 14,82 14,34", fill: "url(#" + id + "p)" }, svg);
-      sv("path", { d: "M14 72 L50 92 L86 72 L86 80 L50 100 L14 80 Z", fill: T, opacity: ".95" }, svg);
-      sv("path", { d: "M14 34 L50 13 L86 34 L86 44 L50 28 L14 44 Z", fill: "#fff", opacity: ".16" }, svg);
-      crestText(svg, ab, 50, 56, fs * 0.95, ink);
-    } else if (style === "patch") {
-      sv("rect", { x: "8.5", y: "18.5", width: "88", height: "86", rx: "20", fill: K }, svg);
-      sv("rect", { x: "6", y: "16", width: "88", height: "86", rx: "20", fill: T, stroke: K, "stroke-width": "2.5" }, svg);
-      sv("rect", { x: "13", y: "23", width: "74", height: "72", rx: "14", fill: F, stroke: K, "stroke-width": "1.5" }, svg);
-      sv("rect", { x: "17.5", y: "27.5", width: "65", height: "63", rx: "10", fill: "none", stroke: ink, "stroke-width": "1.6", "stroke-dasharray": "4 3", opacity: ".9" }, svg);
-      sv("path", { d: "M13 37 C13 27 20 23 30 23 L70 23 C80 23 87 27 87 37 L87 46 C64 38 36 38 13 46 Z", fill: "#fff", opacity: ".13" }, svg);
-      star(svg, 50, 37, 5, ink);
-      crestText(svg, ab, 50, 66, fs * 0.95, ink);
-    } else { // shield
-      var SHIELD = "M50 3 L94 14 C94 52 88 86 50 113 C12 86 6 52 6 14 Z";
-      var INNER = "M50 11 L86 20 C86 53 80 81 50 104 C20 81 14 53 14 20 Z";
-      sv("path", { d: SHIELD, fill: K, transform: "translate(2.5 2.5)" }, svg);
-      sv("path", { d: SHIELD, fill: T, stroke: K, "stroke-width": "2.5" }, svg);
-      sv("path", { d: INNER, fill: F, stroke: K, "stroke-width": "1.5" }, svg);
-      var clip = sv("clipPath", { id: id + "c" }, defs); sv("path", { d: INNER }, clip);
-      var band = sv("g", { "clip-path": "url(#" + id + "c)" }, svg);
-      sv("path", { d: "M0 70 L100 46 L100 58 L0 82 Z", fill: T, opacity: "0.9" }, band);
-      sv("path", { d: "M0 86 L100 62 L100 65 L0 89 Z", fill: T, opacity: "0.55" }, band);
-      sv("path", { d: "M14 20 L50 11 L86 20 C86 30 85 38 84 44 C62 34 38 34 16 44 C15 38 14 30 14 20 Z", fill: "#ffffff", opacity: "0.16" }, band);
-      star(svg, 50, 22, 5, ink);
-      crestText(svg, ab, 50, 64, fs, ink, { "font-style": "italic" });
-    }
+  // generic player bust: faceless silhouette in a school-colored jersey, seal behind (no real likeness)
+  function portrait(p) {
+    var c1 = hexRgb(p.school_color) || [40, 60, 90], c2 = hexRgb(p.school_color2) || [230, 230, 230];
+    if (Math.abs(lum(c1) - lum(c2)) < 0.1) c2 = lum(c1) > 0.5 ? [20, 24, 32] : [235, 238, 242];
+    var id = "p" + (++uid);
+    var wrap = el("div", "portrait");
+    wrap.setAttribute("aria-hidden", "true");
+    var svg = sv("svg", { viewBox: "0 0 220 200", width: "100%", height: "100%", preserveAspectRatio: "xMidYMax meet" }, wrap);
+    var defs = sv("defs", {}, svg);
+    var jg = sv("linearGradient", { id: id + "j", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
+    sv("stop", { offset: "0", "stop-color": shade(c1, 0.18) }, jg); sv("stop", { offset: ".55", "stop-color": shade(c1, 0) }, jg); sv("stop", { offset: "1", "stop-color": shade(c1, -0.45) }, jg);
+    var hg = sv("radialGradient", { id: id + "h", cx: ".42", cy: ".32", r: ".75" }, defs);
+    sv("stop", { offset: "0", "stop-color": "#4a5263" }, hg); sv("stop", { offset: ".6", "stop-color": "#262b35" }, hg); sv("stop", { offset: "1", "stop-color": "#12151b" }, hg);
+    var ng = sv("linearGradient", { id: id + "n", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
+    sv("stop", { offset: "0", "stop-color": "#1a1e26" }, ng); sv("stop", { offset: "1", "stop-color": "#2c323d" }, ng);
+    var rim = sv("linearGradient", { id: id + "r", x1: "0", y1: "0", x2: "1", y2: "0" }, defs);
+    sv("stop", { offset: "0", "stop-color": "#fff", "stop-opacity": ".0" }, rim); sv("stop", { offset: "1", "stop-color": "#fff", "stop-opacity": ".35" }, rim);
+    // seal behind, up and to the left (like a draft badge)
+    var s = seal(p, { big: true });
+    s.setAttribute("x", "0"); s.setAttribute("y", "4"); s.setAttribute("width", "112"); s.setAttribute("height", "112"); s.setAttribute("opacity", ".9");
+    svg.appendChild(s);
+    // shoulders / jersey
+    sv("path", { d: "M34 200 C36 168 52 152 84 144 L104 138 L136 138 L156 144 C188 152 204 168 206 200 Z", fill: "url(#" + id + "j)", stroke: "#05080e", "stroke-width": "2" }, svg);
+    // shoulder stripes
+    sv("path", { d: "M50 170 C60 158 72 152 84 148", fill: "none", stroke: shade(c2, 0), "stroke-width": "5", "stroke-linecap": "round", opacity: ".9" }, svg);
+    sv("path", { d: "M190 170 C180 158 168 152 156 148", fill: "none", stroke: shade(c2, 0), "stroke-width": "5", "stroke-linecap": "round", opacity: ".9" }, svg);
+    // neck
+    sv("path", { d: "M104 112 L104 140 C110 150 130 150 136 140 L136 112 Z", fill: "url(#" + id + "n)" }, svg);
+    // collar
+    sv("path", { d: "M100 137 C108 156 132 156 140 137 L146 141 C136 166 104 166 94 141 Z", fill: shade(c2, 0), stroke: "#05080e", "stroke-width": "1.5" }, svg);
+    // head
+    sv("ellipse", { cx: "120", cy: "84", rx: "29", ry: "35", fill: "url(#" + id + "h)", stroke: "#05080e", "stroke-width": "2" }, svg);
+    sv("ellipse", { cx: "91.5", cy: "88", rx: "4.5", ry: "8", fill: "#2a2f39", stroke: "#05080e", "stroke-width": "1.5" }, svg);
+    sv("ellipse", { cx: "148.5", cy: "88", rx: "4.5", ry: "8", fill: "#2a2f39", stroke: "#05080e", "stroke-width": "1.5" }, svg);
+    sv("path", { d: "M134 56 C146 64 150 80 147 100", fill: "none", stroke: "url(#" + id + "r)", "stroke-width": "3", "stroke-linecap": "round" }, svg);
+    // jersey wordmark band: position
+    var t = sv("text", { x: "120", y: "188", "text-anchor": "middle", "font-family": "Barlow, sans-serif", "font-weight": "800", "font-size": "17",
+      fill: shade(c2, 0), stroke: "#05080e", "stroke-width": "2.5", "paint-order": "stroke", "letter-spacing": "1" }, svg);
+    t.textContent = p.pos || "";
     return wrap;
   }
 
-  function fact(k, v, field, id, small) {
-    var f = el("div", "rb-fact");
-    f.appendChild(el("div", "k", k));
-    var val = el("div", "v" + (small ? " small" : ""), fmt(v));
-    if (field) mark(val, field, id);
-    f.appendChild(val);
-    return f;
+  // talent diamond: tier number, or a "?" for players outside the Top 35 tiers
+  function diamond(tier, big) {
+    var id = "d" + (++uid);
+    var hidden = tier == null;
+    var cols = hidden ? ["#5aa0ff", "#1c4f9c"] : tier <= 1 ? ["#ffd65a", "#c98a00"] : tier <= 3 ? ["#ff6b55", "#c41f12"] : tier <= 5 ? ["#ff9a4a", "#c25a09"] : ["#9aa7bd", "#4d5a72"];
+    var w = el("span", "mx-dia" + (big ? " lg" : ""));
+    w.setAttribute("aria-hidden", "true");
+    var svg = sv("svg", { viewBox: "0 0 100 100", width: "100%", height: "100%" }, w);
+    var g = sv("linearGradient", { id: id, x1: "0", y1: "0", x2: "0", y2: "1" }, sv("defs", {}, svg));
+    sv("stop", { offset: "0", "stop-color": cols[0] }, g); sv("stop", { offset: "1", "stop-color": cols[1] }, g);
+    sv("polygon", { points: "50,4 94,50 50,96 6,50", fill: hidden ? "rgba(20,40,80,.6)" : "url(#" + id + ")", stroke: hidden ? cols[0] : "#05080e", "stroke-width": hidden ? "4" : "3" }, svg);
+    sv("polygon", { points: "50,4 94,50 50,50 6,50", fill: "#fff", opacity: hidden ? ".06" : ".18" }, svg);
+    var t = sv("text", { x: "50", y: "53", "text-anchor": "middle", "dominant-baseline": "middle", "font-family": "Barlow, sans-serif", "font-weight": "800",
+      "font-size": "44", fill: "#fff", stroke: "#05080e", "stroke-width": "3", "paint-order": "stroke" }, svg);
+    t.textContent = hidden ? "?" : String(tier);
+    return w;
   }
 
-  function detail(p, careerRows) {
-    var d = applyTint(el("div", "rb-detail"), p);
-    d.setAttribute("role", "region");
-    d.setAttribute("aria-label", p.name + " scouting card");
+  function icon(d, size) {
+    var s = sv("svg", { viewBox: "0 0 24 24", width: String(size || 22), height: String(size || 22), fill: "none", stroke: "currentColor",
+      "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" });
+    sv("path", { d: d }, s);
+    return s;
+  }
 
-    var head = el("div", "rb-card-head");
-    head.style.setProperty("--hc1", p.school_color || "#23395a");
-    head.style.setProperty("--hc2", p.school_color2 || "#ffc72c");
-    head.appendChild(badge(p, true));
-    var hn = el("div");
-    hn.appendChild(mark(el("div", "big", p.name), "name", p.id));
-    var line = el("div", "rb-muted");
-    line.appendChild(mark(el("span", null, p.school), "school", p.id));
-    if (p.prev_schools) { line.appendChild(document.createTextNode(" · formerly ")); line.appendChild(mark(el("span", null, p.prev_schools), "prev_schools", p.id)); }
-    line.appendChild(document.createTextNode(" · "));
-    line.appendChild(mark(el("span", null, p.class), "class", p.id));
-    hn.appendChild(line);
-    head.appendChild(hn);
-    d.appendChild(head);
+  // ---------- grades ----------
+  var GRADES = [[97, "A+"], [90, "A"], [83, "A-"], [76, "B+"], [66, "B"], [56, "B-"], [46, "C+"], [36, "C"], [26, "C-"], [13, "D"], [0, "F"]];
+  function letter(pct) { for (var i = 0; i < GRADES.length; i++) if (pct >= GRADES[i][0]) return GRADES[i][1]; return "F"; }
+  function gcol(g) {
+    if (!g) return "transparent";
+    var c = g.charAt(0);
+    return c === "A" ? "#2f9a45" : c === "B" ? "#6f9a2c" : c === "C" ? "#c08a1e" : "#b8402f";
+  }
+  function per(a, b) { return a != null && b ? a / b : null; }
 
-    var facts = el("div", "rb-facts");
-    facts.appendChild(fact("Age (draft day)", p.age, "age", p.id));
-    facts.appendChild(fact("Height", p.height, "height", p.id));
-    facts.appendChild(fact("Weight", p.weight == null ? null : p.weight + " lb", "weight", p.id));
-    facts.appendChild(fact("Birth date", p.dob, "dob", p.id, true));
-    facts.appendChild(fact("Player type", p.player_type, "player_type", p.id, true));
-    facts.appendChild(fact("Projected pick", p.draft_projection, "draft_projection", p.id, true));
-    var dec = el("div", "rb-fact");
-    dec.appendChild(el("div", "k", "Likely to declare"));
-    var dv = el("div", "v small");
-    dv.appendChild(mark(el("span", "rb-pill " + (p.declare_likelihood || ""), p.declare_likelihood || "—"), "declare_likelihood", p.id));
-    dec.appendChild(dv);
-    facts.appendChild(dec);
-    d.appendChild(facts);
+  // metric: [key, label, fn(p, s), higherIsBetter, format, useForGrade]
+  var MET = {
+    QB: [
+      ["pyg", "Pass yds / game", function (p, s) { return per(s.pass_yds, s.games); }, true, 0],
+      ["acc", "Accuracy (comp %)", function (p, s) { return s.att ? 100 * s.cmp / s.att : null; }, true, 1],
+      ["ypa", "Yds / attempt", function (p, s) { return per(s.pass_yds, s.att); }, true, 1],
+      ["tdr", "TD rate", function (p, s) { return s.att ? 100 * s.pass_td / s.att : null; }, true, 1],
+      ["sec", "Ball security", function (p, s) { return s.att ? 100 * s.int / s.att : null; }, false, 1],
+      ["ryg", "Rush yds / game", function (p, s) { return per(s.rush_yds, s.games); }, true, 0],
+      ["rtd", "Rush TD", function (p, s) { return s.rush_td; }, true, 0],
+      ["mkt", "Market value", function (p) { return p.market_rank; }, false, 0],
+      ["age", "Draft-day age", function (p) { return p.age; }, false, 1]
+    ],
+    RB: [
+      ["ryg", "Rush yds / game", function (p, s) { return per(s.rush_yds, s.games); }, true, 0],
+      ["ypc", "Yds / carry", function (p, s) { return per(s.rush_yds, s.rush_att); }, true, 1],
+      ["rtd", "Rush TD", function (p, s) { return s.rush_td; }, true, 0],
+      ["rcg", "Catches / game", function (p, s) { return per(s.rec, s.games); }, true, 1],
+      ["rcy", "Rec yds", function (p, s) { return s.rec_yds; }, true, 0],
+      ["shr", "Yards share", function (p) { return p.share_yds; }, true, 1],
+      ["dom", "Dominator", function (p) { return p.dominator; }, true, 1],
+      ["bo", "Breakout age", function (p) { return p.breakout_age; }, false, 1],
+      ["mkt", "Market value", function (p) { return p.market_rank; }, false, 0],
+      ["age", "Draft-day age", function (p) { return p.age; }, false, 1]
+    ],
+    WR: [
+      ["ryg", "Rec yds / game", function (p, s) { return per(s.rec_yds, s.games); }, true, 0],
+      ["cpg", "Catches / game", function (p, s) { return per(s.rec, s.games); }, true, 1],
+      ["ypr", "Yds / catch", function (p, s) { return per(s.rec_yds, s.rec); }, true, 1],
+      ["rtd", "Rec TD", function (p, s) { return s.rec_td; }, true, 0],
+      ["shr", "Yards share", function (p) { return p.share_yds; }, true, 1],
+      ["tds", "TD share", function (p) { return p.share_td; }, true, 1],
+      ["dom", "Dominator", function (p) { return p.dominator; }, true, 1],
+      ["bdm", "Best dominator", function (p) { return p.best_dominator; }, true, 1],
+      ["yta", "Yds / team pass att", function (p) { return p.yptpa_2026; }, true, 2],
+      ["bo", "Breakout age", function (p) { return p.breakout_age; }, false, 1],
+      ["mkt", "Market value", function (p) { return p.market_rank; }, false, 0],
+      ["age", "Draft-day age", function (p) { return p.age; }, false, 1]
+    ]
+  };
+  MET.TE = MET.WR;
+  // 2026 report rows: [label, fn(p, s), higherIsBetter, format, suffix]
+  var REP = {
+    QB: [["Pass yds", function (p, s) { return s.pass_yds; }, true, 0], ["Pass TD", function (p, s) { return s.pass_td; }, true, 0],
+      ["Comp %", function (p, s) { return s.att ? 100 * s.cmp / s.att : null; }, true, 1, "%"], ["INT", function (p, s) { return s.int; }, false, 0],
+      ["Rush yds", function (p, s) { return s.rush_yds; }, true, 0], ["Rush TD", function (p, s) { return s.rush_td; }, true, 0]],
+    RB: [["Rush yds", function (p, s) { return s.rush_yds; }, true, 0], ["Rush TD", function (p, s) { return s.rush_td; }, true, 0],
+      ["Yds / carry", function (p, s) { return per(s.rush_yds, s.rush_att); }, true, 1], ["Catches", function (p, s) { return s.rec; }, true, 0],
+      ["Rec yds", function (p, s) { return s.rec_yds; }, true, 0], ["Dominator", function (p) { return p.dominator; }, true, 1, "%"]],
+    WR: [["Catches", function (p, s) { return s.rec; }, true, 0], ["Rec yds", function (p, s) { return s.rec_yds; }, true, 0],
+      ["Rec TD", function (p, s) { return s.rec_td; }, true, 0], ["Yds / catch", function (p, s) { return per(s.rec_yds, s.rec); }, true, 1],
+      ["Yards share", function (p) { return p.share_yds; }, true, 1, "%"], ["Dominator", function (p) { return p.dominator; }, true, 1, "%"]]
+  };
+  REP.TE = REP.WR;
 
-    var left = el("div", "rb-stack");
-    function block(title, field, text) {
-      var s = el("div");
-      s.appendChild(el("h4", null, title));
-      s.appendChild(mark(el("p", null, text || "—"), field, p.id));
-      return s;
-    }
-    var pj = injOf(p.id);
-    if (pj) {
-      var ib = el("div", "rb-injbox " + pj.code);
-      ib.appendChild(el("h4", null, "Injury status · as of " + injDate(pj.week)));
-      var il = el("div", "rb-injline");
-      il.appendChild(el("span", "rb-injpill " + pj.code, pj.status));
-      if (pj.headline) il.appendChild(el("span", "hl", pj.headline));
-      ib.appendChild(il);
-      ib.appendChild(el("p", null, pj.detail));
-      left.appendChild(ib);
-    }
-    if (p.overall_rank != null && p.overall_note) {
-      var ob = el("div");
-      var oh = el("h4", null, "Top 35 · #");
-      oh.appendChild(mark(el("span", null, String(p.overall_rank)), "overall_rank", p.id));
-      oh.appendChild(document.createTextNode(" overall (superflex PPR)"));
-      ob.appendChild(oh);
-      ob.appendChild(mark(el("p", null, p.overall_note), "overall_note", p.id));
-      left.appendChild(ob);
-    }
-    var prof = el("div", "rb-prof");
-    prof.appendChild(el("h4", null, "Production profile · 2026 share of team offense"));
-    if (p.share_yds != null) {
-      [["Yards share", "share_yds", p.share_yds], ["TD share", "share_td", p.share_td], ["Dominator", "dominator", p.dominator]].forEach(function (b) {
-        var r = el("div", "bar");
-        r.appendChild(el("span", "k", b[0]));
-        var tr = el("span", "track");
-        var fill = el("span", "fill");
-        fill.style.width = Math.min(100, (b[2] || 0) * 2) + "%";
-        tr.appendChild(fill);
-        r.appendChild(tr);
-        var v = el("span", "v");
-        v.appendChild(mark(el("span", null, b[2] == null ? "—" : String(b[2])), b[1], p.id));
-        v.appendChild(document.createTextNode("%"));
-        r.appendChild(v);
-        prof.appendChild(r);
+  function rankAmong(list, getv, hi) {
+    // returns map id -> {v, rank, pct, n}
+    var vals = list.map(function (p) { var v = getv(p); return { id: p.id, v: v == null || !isFinite(v) ? null : v }; }).filter(function (x) { return x.v != null; });
+    var out = {}, n = vals.length;
+    vals.forEach(function (x) {
+      var better = 0, worse = 0, tie = 0;
+      vals.forEach(function (y) {
+        if (y.id === x.id) return;
+        if (y.v === x.v) tie++;
+        else if (hi ? y.v > x.v : y.v < x.v) better++;
+        else worse++;
       });
-      prof.appendChild(el("div", "rb-notes", p.pos === "RB" ? "RB: scrimmage yards and TDs as a share of the team's rushing + passing totals. Bar is full at 50%. 30%+ dominator is elite." : "Receiving yards and TDs as a share of the team's passing totals. Bar is full at 50%. 30%+ dominator is elite for a WR, 20%+ for a TE."));
-    } else prof.appendChild(el("p", "rb-notes", p.pos === "QB" ? "Share stats are for RB, WR and TE." : "No 2026 share yet."));
-    var mkb = el("div", "rb-frow");
-    function mb(k, v, field) { var x = el("span", "rb-fbox"); x.appendChild(el("span", "k", k)); x.appendChild(mark(el("span", "v", fmt(v)), field, p.id)); return x; }
-    mkb.appendChild(mb("Tier", p.tier, "tier"));
-    mkb.appendChild(mb("SF market #", p.market_rank, "market_rank"));
-    mkb.appendChild(mb("Avg slot", p.market_avg, "market_avg"));
-    mkb.appendChild(mb("Lists", p.market_n, "market_n"));
-    prof.appendChild(mkb);
-    if (p.pos !== "QB") {
-      var bo = el("div", "rb-frow");
-      bo.appendChild(mb("Breakout age", p.breakout_age, "breakout_age"));
-      bo.appendChild(mb("Breakout season", p.breakout_season, "breakout_season"));
-      bo.appendChild(mb("Best dominator %", p.best_dominator, "best_dominator"));
-      if (p.pos !== "RB" || p.yptpa_2026) {
-        bo.appendChild(mb("Yds / team pass att '26", p.yptpa_2026, "yptpa_2026"));
-        bo.appendChild(mb("Best yds / team att", p.yptpa_best, "yptpa_best"));
-      }
-      prof.appendChild(bo);
-      prof.appendChild(mark(el("div", "rb-notes", p.breakout_status || ""), "breakout_status", p.id));
-      prof.appendChild(el("div", "rb-notes", "Breakout = first college season with a dominator of " + (p.pos === "TE" ? "15" : "20") + "%+ (age on Sept. 1 that year; younger is better, 19 or under is elite). Yards per team pass attempt stands in for yards per route run, which is PFF subscriber data: 2.0+ is strong, 2.5+ elite."));
-    }
-    var land = el("div", "rb-frow");
-    if (p.nfl_team) {
-      land.appendChild(mb("NFL team", p.nfl_team, "nfl_team"));
-      land.appendChild(mb("Round", p.nfl_round, "nfl_round"));
-      land.appendChild(mb("Pick", p.nfl_pick, "nfl_pick"));
-      if (p.landing_note) prof.appendChild(mark(el("p", "rb-notes", p.landing_note), "landing_note", p.id));
-    } else land.appendChild(el("span", "rb-notes", "NFL landing spot: fills in after the NFL Draft (April 22, 2027): team, round, pick and depth chart."));
-    prof.appendChild(land);
-    left.appendChild(prof);
-    left.appendChild(block("Breakdown", "summary", p.summary));
-    left.appendChild(block("Play style", "play_style", p.play_style));
-    var cs = el("div");
-    cs.appendChild(el("h4", null, "Player comparisons"));
-    var comps = el("div", "rb-comps");
-    mark(comps, "comps", p.id);
-    (p.comps ? p.comps.split(" · ") : ["—"]).forEach(function (c) { comps.appendChild(el("span", null, c)); });
-    cs.appendChild(comps);
-    left.appendChild(cs);
-    left.appendChild(block("Projected NFL usage", "nfl_usage", p.nfl_usage));
-    left.appendChild(block("Declare outlook", "declare_note", p.declare_note));
-    d.appendChild(left);
-
-    var right = el("div", "rb-stack");
-    var st = el("div");
-    st.appendChild(el("h4", null, "College career stats"));
-    var wrap = el("div", "rb-tablewrap");
-    var t = el("table", "rb-career");
-    t.setAttribute("data-source", "career");
-    t.setAttribute("data-row-key", "row_id");
-    var thead = el("thead"), hr = el("tr");
-    var cols = [["season","Season"],["school","School"]].concat(COLS[p.pos]);
-    cols.forEach(function (c) { var th = el("th", null, c[1]); th.setAttribute("data-field", c[0]); th.scope = "col"; hr.appendChild(th); });
-    thead.appendChild(hr); t.appendChild(thead);
-    var tb = el("tbody");
-    careerRows.forEach(function (r) {
-      var tr = el("tr", r.partial ? "partial" : "");
-      tr.setAttribute("data-key", encodeURIComponent(r.row_id));
-      cols.forEach(function (c, i) {
-        var v = r[c[0]];
-        if (c[0] === "season" && r.partial) v = String(r.season) + "*";
-        tr.appendChild(el("td", null, c[0] === "season" ? String(v) : fmt(v)));
-      });
-      tb.appendChild(tr);
+      out[x.id] = { v: x.v, rank: better + 1, n: n, pct: n > 1 ? 100 * (worse + tie / 2) / (n - 1) : 50 };
     });
-    if (!careerRows.length) {
-      var tr0 = el("tr"); var td0 = el("td", "rb-muted", "No verified stat lines yet");
-      td0.colSpan = cols.length; td0.style.textAlign = "left"; tr0.appendChild(td0); tb.appendChild(tr0);
-    }
-    t.appendChild(tb);
-    wrap.appendChild(t);
-    st.appendChild(wrap);
-    var part = careerRows.filter(function (r) { return r.partial; })[0];
-    if (part) st.appendChild(el("div", "rb-notes", "* 2026 season to date" + (part.through ? ", through " + part.through : "") + ". Blank cells were not confirmed by a second source."));
-    right.appendChild(st);
-
-    var ver = el("div");
-    ver.appendChild(el("h4", null, "Verification"));
-    var vr = el("div", "rb-verify");
-    vr.appendChild(mark(el("span", p.bio_verified ? "ok" : "no", p.bio_verified ? "✓ Bio confirmed by 2 sources" : "! Bio from 1 source"), "bio_verified", p.id));
-    vr.appendChild(mark(el("span", p.stats_verified ? "ok" : "no", p.stats_verified ? "✓ Stats confirmed by 2 sources" : "! Some stats from 1 source"), "stats_verified", p.id));
-    ver.appendChild(vr);
-    if (p.notes) { var n = mark(el("p", "rb-notes", p.notes), "notes", p.id); n.style.marginTop = "8px"; ver.appendChild(n); }
-    right.appendChild(ver);
-
-    if (p.sources) {
-      var so = el("div");
-      so.appendChild(el("h4", null, "Sources"));
-      var sl = el("div", "rb-sources");
-      mark(sl, "sources", p.id);
-      p.sources.split(/\s+/).filter(Boolean).slice(0, 12).forEach(function (u) {
-        if (!/^https?:\/\//.test(u)) return;
-        var a = el("a", null, u.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]);
-        a.href = u; a.target = "_blank"; a.rel = "noopener";
-        sl.appendChild(a);
-      });
-      so.appendChild(sl);
-      right.appendChild(so);
-    }
-    d.appendChild(right);
-    return d;
+    return out;
   }
 
-  function moveOf(id) {
-    var m = dash.data("rank_moves");
-    if (m.status !== "ok" || !m.data) return null;
-    for (var i = 0; i < m.data.length; i++) if (m.data[i].id === id) return m.data[i].move;
-    return null;
-  }
-
-  var GROUPS = [
-    ["riser", "Risers"], ["faller", "Fallers"], ["added", "Added to the board"],
-    ["removed", "Removed from the board"], ["injury", "Injuries and availability"]
-  ];
-  function cmark(e, field, id) {
-    e.setAttribute("data-source", "changes");
-    e.setAttribute("data-field", field);
-    e.setAttribute("data-where", "change_id=" + encodeURIComponent(id));
-    return e;
-  }
-  function renderWeek() {
-    var box = document.getElementById("rb-week");
-    box.textContent = "";
-    var cd = dash.data("changes");
-    if (cd.status !== "ok") {
-      box.appendChild(el("div", "rb-empty", cd.status === "loading" ? "Loading weekly notes…" : "Weekly notes didn’t load."));
-      return;
+  // ---------- model ----------
+  function build() {
+    var ids = ["players", "career", "changes", "mock", "mock_sources", "favorites", "leagues", "my_picks", "my_roster"], D = {};
+    for (var i = 0; i < ids.length; i++) {
+      var r = dash.data(ids[i]);
+      if (r.status === "loading") return "loading";
+      D[ids[i]] = r.status === "ok" && Array.isArray(r.data) ? r.data : [];
     }
-    var weeks = Array.from(new Set(cd.data.map(function (r) { return r.week; }))).sort().reverse();
-    if (!weeks.length) { box.appendChild(el("div", "rb-empty", "No weekly notes yet.")); return; }
-    if (!state.week || weeks.indexOf(state.week) < 0) state.week = weeks[0];
-    var head = el("div", "rb-week-head");
-    var wt = el("h2", "rb-week-title");
-    wt.id = "week-title";
-    wt.textContent = "Board changes · week of " + d3.utcFormat("%b %-d, %Y")(new Date(state.week + "T12:00:00Z"));
-    head.appendChild(wt);
-    if (weeks.length > 1) {
-      var sel = el("select", "rb-select");
-      sel.setAttribute("aria-label", "Week");
-      weeks.forEach(function (w) { var o = el("option", null, d3.utcFormat("%b %-d")(new Date(w + "T12:00:00Z"))); o.value = w; if (w === state.week) o.selected = true; sel.appendChild(o); });
-      sel.addEventListener("change", function (e) { state.week = e.target.value; render(); });
-      head.appendChild(sel);
-    }
-    box.appendChild(head);
-    var rows = cd.data.filter(function (r) { return r.week === state.week; });
-    ["summary", "method"].forEach(function (t) {
-      rows.filter(function (r) { return r.type === t; }).forEach(function (r) {
-        var s = el("div", "rb-summary" + (t === "method" ? " method" : ""));
-        s.appendChild(cmark(el("h3", null, r.headline), "headline", r.change_id));
-        s.appendChild(cmark(el("p", null, r.detail), "detail", r.change_id));
-        box.appendChild(s);
+    if (!D.players.length) return "error";
+    var m = { players: D.players, byId: {}, career: {}, s26: {}, changes: D.changes, mock: D.mock, sources: D.mock_sources,
+      saved: D.favorites.map(function (r) { return r.id; }), leagues: D.leagues, picks: D.my_picks, roster: D.my_roster };
+    m.players.forEach(function (p) { m.byId[p.id] = p; m.career[p.id] = []; });
+    D.career.forEach(function (r) { if (m.career[r.player_id]) m.career[r.player_id].push(r); });
+    m.players.forEach(function (p) {
+      m.career[p.id].sort(function (a, b) { return a.season - b.season; });
+      var c = m.career[p.id].filter(function (r) { return r.season === 2026; })[0];
+      m.s26[p.id] = c || {};
+    });
+    // grades and report ranks, per position
+    m.grades = {}; m.report = {}; m.score = {}; m.posCount = {};
+    POS.forEach(function (pos) {
+      var list = m.players.filter(function (p) { return p.pos === pos; });
+      m.posCount[pos] = list.length;
+      var gm = MET[pos].map(function (d) { return { d: d, r: rankAmong(list, function (p) { return d[2](p, m.s26[p.id]); }, d[3]) }; });
+      var rp = REP[pos].map(function (d) { return { d: d, r: rankAmong(list, function (p) { return d[1](p, m.s26[p.id]); }, d[2]) }; });
+      list.forEach(function (p) {
+        m.grades[p.id] = gm.map(function (x) {
+          var h = x.r[p.id];
+          return { key: x.d[0], label: x.d[1], v: h ? h.v : null, pct: h ? h.pct : null, grade: h && h.n > 2 ? letter(h.pct) : null, fmt: x.d[4], rank: h ? h.rank : null, n: h ? h.n : 0 };
+        });
+        m.report[p.id] = rp.map(function (x) {
+          var h = x.r[p.id];
+          return { label: x.d[0], v: h ? h.v : null, rank: h ? h.rank : null, n: h ? h.n : 0, fmt: x.d[3], suf: x.d[4] || "" };
+        });
+        var prod = m.grades[p.id].filter(function (g) { return g.pct != null && g.key !== "mkt" && g.key !== "age"; });
+        m.score[p.id] = prod.length >= 3 ? prod.reduce(function (a, g) { return a + g.pct; }, 0) / prod.length / 10 : null;
       });
     });
-    var grid = el("div", "rb-groups");
-    GROUPS.forEach(function (g) {
-      var items = rows.filter(function (r) { return r.type === g[0]; });
-      if (!items.length) return;
-      var card = el("div", "rb-group " + g[0]);
-      card.id = "week-" + g[0];
-      card.appendChild(el("h4", null, g[1] + " · " + items.length));
-      items.forEach(function (r) {
-        var it = el("div", "rb-item");
-        var who = el("div", "who");
-        who.appendChild(cmark(el("span", null, r.name), "name", r.change_id));
-        who.appendChild(document.createTextNode(" "));
-        who.appendChild(cmark(el("span", "rb-muted", r.pos), "pos", r.change_id));
-        it.appendChild(who);
-        var rk = el("div", "ranks");
-        if (r.from_rank != null) { rk.appendChild(document.createTextNode(r.board)); rk.appendChild(cmark(el("span", null, String(r.from_rank)), "from_rank", r.change_id)); }
-        if (r.from_rank != null && r.to_rank != null) rk.appendChild(document.createTextNode(" → "));
-        if (r.to_rank != null) { rk.appendChild(document.createTextNode(r.board)); rk.appendChild(cmark(el("span", null, String(r.to_rank)), "to_rank", r.change_id)); }
-        it.appendChild(rk);
-        it.appendChild(cmark(el("div", "hl", r.headline), "headline", r.change_id));
-        it.appendChild(cmark(el("div", "dt", r.detail), "detail", r.change_id));
-        if (r.player_id) {
-          it.style.cursor = "pointer";
-          it.addEventListener("click", function () { openPlayer(r.player_id); });
-        }
-        card.appendChild(it);
-      });
-      grid.appendChild(card);
+    buildInjuries(m); buildFlags(m); buildNeeds(m); buildTargets(m);
+    return m;
+  }
+
+  function buildInjuries(m) {
+    var BODY = /torn|broken|fibula|\bACL\b|\bMCL\b|surgery|concussion|season-ending|out for the (season|year)|shoulder|knee|ankle|hamstring|\bfoot\b/i;
+    var SEASON = /out for the (season|year)|season-ending|done for the season|ends his (year|season)|torn (acl|mcl)|broken/i;
+    var SOON = /expected back|may return|could return|day[- ]to[- ]day|questionable/i;
+    var BACK = /^(back\b|season debut|returning|returned)|back on the field|back early|back from/i;
+    var best = {};
+    m.changes.forEach(function (c) {
+      if (!c.player_id) return;
+      var text = c.headline + " " + c.detail;
+      if (!(c.type === "injury" || (c.type === "faller" && BODY.test(text)))) return;
+      var b = best[c.player_id];
+      if (!b || c.week > b.week || (c.week === b.week && c.type === "injury" && b.type !== "injury")) best[c.player_id] = c;
     });
-    box.appendChild(grid);
-  }
-
-
-  function openPlayer(pid) {
-    var pd = dash.data("players");
-    var p = pd.status === "ok" ? pd.data.filter(function (x) { return x.id === pid; })[0] : null;
-    if (!p) return;
-    if (isMobile()) { state.open = p.id; render(); return; } // phones: open the card as a sheet, stay on this tab
-    state.pos = p.pos; state.open = p.id; state.q = ""; document.getElementById("rb-search").value = "";
-    render();
-    var rr = document.getElementById("row-" + p.id); if (rr) rr.scrollIntoView({ block: "center" });
-  }
-  function mmark(e, field, pick) {
-    e.setAttribute("data-source", "mock");
-    e.setAttribute("data-field", field);
-    e.setAttribute("data-where", "pick=" + encodeURIComponent(pick));
-    return e;
-  }
-  dash.calc("mock_mix", {
-    title: "Mock draft picks by position",
-    description: "Count of mock-draft picks at each position.",
-    inputs: ["mock"],
-    fn: function (mock) {
-      return ["QB", "RB", "WR", "TE"].map(function (pos) {
-        return { pos: pos, picks: mock.filter(function (r) { return r.pos === pos; }).length };
-      });
-    }
-  });
-  function renderMock() {
-    var box = document.getElementById("rb-mock");
-    box.textContent = "";
-    var md = dash.data("mock");
-    var top = el("div");
-    var t = el("h2", "rb-mock-title", "Projected rookie draft");
-    t.id = "mock-title";
-    top.appendChild(t);
-    top.appendChild(el("p", "rb-mock-intro", "A 10-team, 4-round linear rookie draft for a superflex PPR league (QB, 2 RB, 3 WR, TE, 2 flex, superflex; no TE premium). Picks follow the consensus of fall 2026 superflex mocks and rankings, adjusted for this format: 10 teams instead of the usual 12, TEs pushed back without TE premium, and declare or injury risk priced in. Click a pick to open the player's card."));
-    box.appendChild(top);
-    if (md.status !== "ok") {
-      box.appendChild(el("div", "rb-empty", md.status === "loading" ? "Loading mock draft…" : "Mock draft didn’t load."));
-      return;
-    }
-    var mix = dash.data("mock_mix");
-    if (mix.status === "ok" && mix.data) {
-      var mx = el("div", "rb-mix");
-      mx.setAttribute("data-source", "mock_mix");
-      mix.data.forEach(function (r) {
-        var b = el("div", "mx");
-        var c = el("span", "rb-pos"); c.style.setProperty("--pc", "var(--pos-" + r.pos + ")"); c.appendChild(el("span", null, r.pos));
-        b.appendChild(c);
-        var n = el("span", null, String(r.picks));
-        n.setAttribute("data-source", "mock_mix"); n.setAttribute("data-field", "picks"); n.setAttribute("data-where", "pos=" + r.pos);
-        b.appendChild(n);
-        b.appendChild(el("span", "rb-muted", r.picks === 1 ? "pick" : "picks"));
-        mx.appendChild(b);
-      });
-      box.appendChild(mx);
-    }
-    [1, 2, 3, 4].forEach(function (rd) {
-      var rows = md.data.filter(function (r) { return Number(r.round) === rd; }).sort(function (a, b) { return a.overall - b.overall; });
-      if (!rows.length) return;
-      var sec = el("section");
-      sec.id = "mock-round-" + rd;
-      sec.appendChild(el("div", "rb-round-head", "Round " + rd));
-      var grid = el("div", "rb-picks");
-      rows.forEach(function (r) {
-        var c = applyTint(el("button", "rb-pick"), r);
-        c.type = "button";
-        var pk = el("div", "pk");
-        pk.appendChild(mmark(el("span", null, r.pick), "pick", r.pick));
-        var ov = el("span", "ov", "#");
-        ov.appendChild(mmark(el("span", null, String(r.overall)), "overall", r.pick));
-        pk.appendChild(ov);
-        c.appendChild(pk);
-        c.appendChild(badge(r));
-        var info = el("div");
-        info.appendChild(mmark(el("div", "nm", r.name), "name", r.pick));
-        var meta = el("div", "meta");
-        var pc = el("span", "rb-pos"); pc.style.setProperty("--pc", "var(--pos-" + r.pos + ")");
-        pc.appendChild(mmark(el("span", null, r.pos), "pos", r.pick));
-        pc.appendChild(mmark(el("span", null, String(r.pos_rank)), "pos_rank", r.pick));
-        meta.appendChild(pc);
-        meta.appendChild(mmark(el("span", null, r.school), "school", r.pick));
-        var it1 = injTag(r.player_id);
-        if (it1) meta.appendChild(it1);
-        info.appendChild(meta);
-        c.appendChild(info);
-        if (r.sf_avg != null) {
-          var mk = el("div", "mk", "SF consensus avg ");
-          mk.appendChild(mmark(el("span", null, String(r.sf_avg)), "sf_avg", r.pick));
-          mk.appendChild(document.createTextNode(" · range "));
-          mk.appendChild(mmark(el("span", null, r.sf_range), "sf_range", r.pick));
-          mk.appendChild(document.createTextNode(" · "));
-          mk.appendChild(mmark(el("span", null, String(r.sf_sources)), "sf_sources", r.pick));
-          mk.appendChild(document.createTextNode(" lists"));
-          c.appendChild(mk);
-        }
-        c.appendChild(mmark(el("div", "why", r.note), "note", r.pick));
-        c.addEventListener("click", function () { openPlayer(r.player_id); });
-        grid.appendChild(c);
-      });
-      sec.appendChild(grid);
-      box.appendChild(sec);
+    var ORDER = { season: 0, out: 1, soon: 2, back: 3 };
+    m.inj = {};
+    m.injList = m.players.filter(function (p) { return best[p.id]; }).map(function (p) {
+      var c = best[p.id], text = c.headline + " " + c.detail;
+      var code = SEASON.test(text) ? "season" : BACK.test(c.headline) ? "back" : SOON.test(text) ? "soon" : "out";
+      var r = { id: p.id, code: code, status: { season: "Out for season", out: "Out", soon: "Questionable", back: "Back" }[code],
+        tag: { season: "OUT-YR", out: "OUT", soon: "Q", back: "" }[code],
+        headline: c.type === "injury" || BODY.test(c.headline) ? c.headline : "", detail: c.detail, week: c.week };
+      m.inj[p.id] = r;
+      return r;
+    }).sort(function (a, b) {
+      var pa = m.byId[a.id], pb = m.byId[b.id];
+      return ORDER[a.code] - ORDER[b.code] || (pa.overall_rank || 999) - (pb.overall_rank || 999) || pa.rank - pb.rank;
     });
-    var sd = dash.data("mock_sources");
-    if (sd.status === "ok" && sd.data.length) {
-      var so = el("div", "rb-summary method");
-      so.appendChild(el("h3", null, "Mocks and rankings used"));
-      var sl = el("div", "rb-msources");
-      sl.setAttribute("data-source", "mock_sources");
-      sd.data.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).forEach(function (s) {
-        if (!/^https?:\/\//.test(s.url)) return;
-        var a = el("a", null, s.name + " (" + s.format + ", " + d3.utcFormat("%b %-d")(new Date(s.date + "T12:00:00Z")) + ")");
-        a.href = s.url; a.target = "_blank"; a.rel = "noopener";
-        sl.appendChild(a);
+  }
+  function buildFlags(m) {
+    m.flag = {};
+    m.players.forEach(function (p) {
+      if ((p.overall_rank == null && p.overall_prev == null) || p.market_rank == null || p.board_slot == null) return;
+      var gap = Math.round(p.market_rank - p.board_slot);
+      if (gap >= 6 || gap <= -6) m.flag[p.id] = { gap: gap, flag: gap >= 6 ? "Value" : "Pricey" };
+    });
+  }
+  function buildNeeds(m) {
+    m.needs = {};
+    m.leagues.forEach(function (L) {
+      m.needs[L.league_id] = POS.map(function (pos) {
+        var mine = m.roster.filter(function (r) { return r.league_id === L.league_id && r.pos === pos; });
+        var maxAge = pos === "QB" ? 27 : pos === "TE" ? 26 : 25;
+        var young = mine.filter(function (r) { return r.age != null && r.age <= maxAge; }).length;
+        var target = pos === "QB" ? (L.qb_slots === 2 ? 3 : 2) : pos === "RB" ? 3 : pos === "WR" ? (L.wr_slots === 3 ? 4 : 3) : 2;
+        var ratio = young / target;
+        var grade = ratio >= 1.34 ? "A" : ratio >= 1 ? "A-" : ratio >= 0.75 ? "B" : ratio >= 0.5 ? "C+" : ratio >= 0.34 ? "C" : ratio > 0 ? "D" : "F";
+        return { pos: pos, count: mine.length, young: young, maxAge: maxAge, target: target, ratio: ratio, grade: grade,
+          names: mine.slice().sort(function (a, b) { return (a.age || 99) - (b.age || 99); }) };
       });
-      so.appendChild(sl);
-      box.appendChild(so);
-    }
+    });
+  }
+  function buildTargets(m) {
+    function phi(z) { var t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2);
+      var pr = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - pr : pr; }
+    m.targets = {};
+    m.picks.forEach(function (pk) {
+      var L = m.leagues.filter(function (l) { return l.league_id === pk.league_id; })[0];
+      if (!L) return;
+      m.targets[pk.pick_id] = m.players.map(function (p) {
+        var mult = p.pos === "QB" ? (L.qb_slots === 2 ? 0.8 : 1) : p.pos === "TE" ? (L.te_premium > 0 ? 0.9 : 1.15) : 1;
+        var mu = (p.market_rank != null ? p.market_rank : 70) * mult;
+        var sd = Math.max(0.6, ((p.market_hi || 0) - (p.market_lo || 0)) / 5, mu * 0.22);
+        var chance = 1 - phi((pk.proj_overall - 0.5 - mu) / sd);
+        var val = p.overall_rank != null ? p.overall_rank : 35 + (p.market_rank != null ? p.market_rank : 80) * 0.6;
+        if (p.pos === "QB" && L.qb_slots === 2) val *= 0.85;
+        if (p.pos === "TE" && !(L.te_premium > 0)) val *= 1.15;
+        return { p: p, chance: Math.round(chance * 100), val: val };
+      }).filter(function (c) { return c.chance >= 15; }).sort(function (a, b) { return a.val - b.val; }).slice(0, 6);
+    });
   }
 
-
-
-  // Favorites: stars saved by Claude (the "favorites" source) plus ones toggled in this browser.
-  function savedFavs() {
-    var f = dash.data("favorites");
-    return f.status === "ok" && Array.isArray(f.data) ? f.data.map(function (r) { return r.id; }) : [];
-  }
-  function isFav(id) {
-    return (savedFavs().indexOf(id) >= 0 && !state.unfavs.has(id)) || state.favs.has(id);
-  }
+  // ---------- favorites ----------
+  function isFav(id) { return (M.saved.indexOf(id) >= 0 && !state.unfavs.has(id)) || state.favs.has(id); }
   function toggleFav(id) {
-    var saved = savedFavs().indexOf(id) >= 0;
+    var saved = M.saved.indexOf(id) >= 0;
     if (isFav(id)) { state.favs.delete(id); if (saved) state.unfavs.add(id); }
     else { state.unfavs.delete(id); if (!saved) state.favs.add(id); }
     dash.setParams({ favs: Array.from(state.favs), unfavs: Array.from(state.unfavs) });
     render();
   }
-  function injCount() {
-    var d = dash.data("injuries");
-    return d.status === "ok" && d.data ? d.data.filter(function (r) { return r.code !== "back"; }).length : 0;
-  }
-  function favCount(players) { return players.filter(function (r) { return isFav(r.id); }).length; }
-  function mockPickOf(id) {
-    var m = dash.data("mock");
-    if (m.status !== "ok") return null;
-    var r = m.data.filter(function (x) { return x.player_id === id; })[0];
-    return r ? Number(r.overall) : null;
-  }
+  function favCount() { return M.players.filter(function (p) { return isFav(p.id); }).length; }
+  function injCount() { return M.injList.filter(function (r) { return r.code !== "back"; }).length; }
+  function mockPick(id) { var r = M.mock.filter(function (x) { return x.player_id === id; })[0]; return r || null; }
   var FAVSORT = {
     overall: function (a, b) { return (a.overall_rank || 999) - (b.overall_rank || 999) || a.rank - b.rank; },
-    mock: function (a, b) { return (mockPickOf(a.id) || 999) - (mockPickOf(b.id) || 999) || (a.overall_rank || 999) - (b.overall_rank || 999); },
+    mock: function (a, b) { var x = mockPick(a.id), y = mockPick(b.id); return (x ? x.overall : 999) - (y ? y.overall : 999) || (a.overall_rank || 999) - (b.overall_rank || 999); },
     pos: function (a, b) { return POS.indexOf(a.pos) - POS.indexOf(b.pos) || a.rank - b.rank; },
     prod: function (a, b) { return (b.s26_yds || 0) - (a.s26_yds || 0); },
     name: function (a, b) { return a.name.localeCompare(b.name); }
   };
 
-  function renderCrestPick(p) {
-    var box = document.getElementById("rb-crestpick");
-    box.textContent = "";
-    box.hidden = true; // style chosen: stadium seal
+  // ---------- shared row pieces ----------
+  function tags(p) {
+    var box = el("span", "tags"), f = M.flag[p.id], j = M.inj[p.id];
+    if (f) { var t = el("span", "mx-tag " + f.flag.toLowerCase(), f.flag); t.title = f.flag === "Value" ? "The market drafts him later than our board" : "The market drafts him earlier than our board"; box.appendChild(t); }
+    if (j && j.tag) { var u = el("span", "mx-tag inj " + j.code, j.tag); u.title = j.status + " (as of " + day(j.week) + "): " + (j.headline || j.detail); box.appendChild(u); }
+    return box.childNodes.length ? box : null;
+  }
+  function posChip(pos, txt) { var c = el("span", "mx-pos", txt || pos); c.style.setProperty("--pc", "var(--pos-" + pos + ")"); return c; }
+  function col(v, l, cls, vcls) {
+    var c = el("div", "mx-col" + (cls ? " " + cls : ""));
+    if (v && v.nodeType) c.appendChild(v); else c.appendChild(el("div", "v" + (vcls ? " " + vcls : ""), v));
+    if (l) c.appendChild(el("div", "l", l));
+    return c;
+  }
+  function prodLine(p) {
+    var kind = p.pos === "QB" ? "pass" : p.pos === "RB" ? "rush" : "rec";
+    return { v: fmt(p.s26_yds) + " / " + fmt(p.s26_td), l: kind + " yds / TD" };
+  }
+  function starBtn(p) {
+    var on = isFav(p.id);
+    var b = el("button", "mx-star" + (on ? " on" : ""), on ? "★" : "☆");
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(on));
+    b.setAttribute("aria-label", (on ? "Remove " : "Add ") + p.name + (on ? " from" : " to") + " favorites");
+    b.addEventListener("click", function (e) { e.stopPropagation(); toggleFav(p.id); });
+    b.addEventListener("keydown", function (e) { e.stopPropagation(); });
+    return b;
   }
 
-  // Focus panel: the highlighted prospect, recruiting-board style.
-  function renderFocus(p, count) {
-    var box = document.getElementById("rb-focus");
-    box.textContent = "";
-    if (!p) return;
-    var top = state.pos === "TOP";
-    box.style.setProperty("--fc1", p.school_color || "#8e1b1b");
-    var h = el("div", "rb-fhead");
-    h.appendChild(el("span", null, top ? "All prospects · Top 35 superflex" : "All prospects · " + LABEL[state.pos]));
-    if (state.pos === "FAV") h.lastChild.textContent = "Your favorites";
-    h.appendChild(el("span", "cnt", state.pos === "FAV" ? count + (count === 1 ? " player" : " players") : "Board: " + (top ? p.overall_rank : p.rank) + " / " + count));
-    box.appendChild(h);
-    var b = el("div", "rb-fbody");
-    b.appendChild(badge(p, true));
-    var id = el("div", "rb-fid");
-    id.appendChild(mark(el("div", "p", p.pos), "pos", p.id));
-    id.appendChild(mark(el("div", "r", String(p.rank)), "rank", p.id));
-    b.appendChild(id);
-    var nm = el("div", "rb-fname");
-    var parts = String(p.name).split(" ");
-    var first = parts.length > 1 ? parts.shift() : "";
-    if (first) { nm.appendChild(el("div", "first", first)); nm.appendChild(document.createTextNode(" ")); }
-    nm.appendChild(el("div", "last", parts.join(" ")));
-    nm.setAttribute("data-source", "players"); nm.setAttribute("data-field", "name"); nm.setAttribute("data-where", "id=" + encodeURIComponent(p.id));
-    var ty = mark(el("div", "type", p.player_type || ""), "player_type", p.id);
-    var wrapN = el("div"); wrapN.appendChild(nm); wrapN.appendChild(ty);
-    b.appendChild(wrapN);
-    var st = el("div", "rb-fstats");
-    function fb(k, v, field, cls) {
-      var x = el("span", "rb-fbox" + (cls ? " " + cls : ""));
-      x.appendChild(el("span", "k", k));
-      x.appendChild(mark(el("span", "v", fmt(v)), field, p.id));
-      return x;
-    }
-    var r1 = el("div", "rb-frow");
-    if (p.overall_rank != null) r1.appendChild(fb("Top 35", p.overall_rank, "overall_rank", "hi"));
-    var y = el("span", "rb-fbox hi");
-    y.appendChild(el("span", "k", "2026 " + (p.pos === "QB" ? "pass" : p.pos === "RB" ? "rush" : "rec")));
-    var yv = el("span", "v");
-    yv.appendChild(mark(el("span", null, fmt(p.s26_yds)), "s26_yds", p.id));
-    yv.appendChild(document.createTextNode(" yds · "));
-    yv.appendChild(mark(el("span", null, fmt(p.s26_td)), "s26_td", p.id));
-    yv.appendChild(document.createTextNode(" TD"));
-    y.appendChild(yv);
-    r1.appendChild(y);
-    var dc = el("span", "rb-fbox");
-    dc.appendChild(el("span", "k", "Declare"));
-    dc.appendChild(mark(el("span", "rb-pill " + (p.declare_likelihood || ""), p.declare_likelihood || "—"), "declare_likelihood", p.id));
-    r1.appendChild(dc);
-    var vfx = flagOf(p.id);
-    if (vfx) {
-      var vb = el("span", "rb-fbox");
-      vb.appendChild(el("span", "k", "Market"));
-      var vt = el("span", "rb-vflag " + vfx.flag.toLowerCase());
-      vt.appendChild(cm(el("span", null, vfx.flag), "value_flags", "flag", p.id, "id"));
-      vb.appendChild(vt);
-      var gp = el("span", "v");
-      gp.appendChild(document.createTextNode(vfx.gap > 0 ? "+" : ""));
-      gp.appendChild(cm(el("span", null, String(vfx.gap)), "value_flags", "gap", p.id, "id"));
-      vb.appendChild(gp);
-      r1.appendChild(vb);
-    }
-    st.appendChild(r1);
-    var r2 = el("div", "rb-frow");
-    r2.appendChild(fb("Ht", p.height, "height"));
-    r2.appendChild(fb("Wt", p.weight, "weight"));
-    r2.appendChild(fb("Age", p.age, "age"));
-    r2.appendChild(fb("Cl", p.class, "class"));
-    r2.appendChild(fb("School", p.school, "school"));
-    st.appendChild(r2);
-    b.appendChild(st);
-    var pj = el("div", "rb-fproj");
-    pj.appendChild(el("span", "k", "Draft projection"));
-    pj.appendChild(mark(el("span", null, p.draft_projection || "—"), "draft_projection", p.id));
-    b.appendChild(pj);
-    box.appendChild(b);
+  /* One draft-list row. opts: { rank, rankCls, move, cols: [[value, label, cls, vcls]...], note, mini } */
+  function row(p, opts) {
+    opts = opts || {};
+    var r = setTint(el("div", "mx-row"), p);
+    r.setAttribute("role", "button"); r.tabIndex = 0;
+    r.setAttribute("aria-label", p.name + ", " + p.pos + p.rank + ", " + p.school);
+    if (state.open === p.id) r.classList.add("sel");
+    var rk = el("div", "mx-rk");
+    rk.appendChild(el("div", "n" + (opts.rankCls ? " " + opts.rankCls : ""), opts.rank != null ? String(opts.rank) : String(p.rank)));
+    if (opts.move != null) rk.appendChild(opts.move);
+    var pt = el("div", "mx-pt"); pt.appendChild(portrait(p));
+    var fl = firstLast(p.name);
+    var nm = el("div", "mx-nm");
+    nm.appendChild(el("div", "pos", p.pos));
+    nm.appendChild(el("div", "first", fl[0]));
+    var last = el("div", "last", fl[1]);
+    nm.appendChild(last);
+    var tg = tags(p);
+    var sch = el("div", "sch", p.school);
+    nm.appendChild(sch);
+    if (tg) { if (mq.matches) nm.insertBefore(tg, nm.firstChild.nextSibling); else last.appendChild(tg); }
+    var meta = el("div", "mx-meta");
+    var r1 = el("div", "r1");
+    add(r1, posChip(p.pos, "#" + p.rank + " " + p.pos), el("span", "typ", p.player_type || ""));
+    meta.appendChild(r1);
+    meta.appendChild(el("div", "r2", [p.height || null, p.weight ? p.weight + " lbs." : null, p.class || null, p.age ? "age " + p.age : null].filter(Boolean).join("  ·  ")));
+    if (opts.note) meta.appendChild(el("div", "note", opts.note));
+    add(r, rk, pt, nm, meta);
+    (opts.cols || []).forEach(function (c) { r.appendChild(col(c[0], c[1], c[2], c[3])); });
+    var mini = el("div", "mx-mini");
+    (opts.mini || [posChip(p.pos, p.pos + p.rank), el("span", null, projShort(p.draft_projection))]).forEach(function (x) { if (x) mini.appendChild(typeof x === "string" ? el("span", null, x) : x); });
+    r.appendChild(mini);
+    r.appendChild(starBtn(p));
+    var open = function () { openCard(p.id); };
+    r.addEventListener("click", open);
+    r.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+    return r;
+  }
+  function moveEl(p) {
+    if (p.prev_rank == null) return el("span", "mx-mv new", "NEW");
+    var d = p.prev_rank - p.rank;
+    if (!d) return null;
+    var s = el("span", "mx-mv " + (d > 0 ? "up" : "down"), (d > 0 ? "▲" : "▼") + Math.abs(d));
+    s.setAttribute("aria-label", (d > 0 ? "up " : "down ") + Math.abs(d) + " since last week");
+    return s;
+  }
+  function boardCols(p, top) {
+    var pl = prodLine(p);
+    return [
+      [projShort(p.draft_projection), "Projection", null, "sm"],
+      [diamond(p.tier), p.tier != null ? "Tier " + p.tier : "Unranked"],
+      [pl.v, pl.l, null, null],
+      [el("span", "mx-pill " + (p.declare_likelihood || ""), p.declare_likelihood || "—"), "Declare", "c-dec"]
+    ];
   }
 
-
-  // ---------- league-aware draft tools ----------
-  dash.calc("value_flags", {
-    title: "Our board vs the superflex market",
-    description: "Superflex market consensus slot minus our scouting board's slot, for players in our Top 35 now or last week. 6+ = the market drafts him later than our board says (Value); -6 or less = earlier (Pricey).",
-    inputs: ["players"],
-    fn: function (players) {
-      return players.filter(function (p) { return (p.overall_rank != null || p.overall_prev != null) && p.market_rank != null && p.board_slot != null; }).map(function (p) {
-        var gap = Math.round(p.market_rank - p.board_slot);
-        return { id: p.id, gap: gap, flag: gap >= 6 ? "Value" : gap <= -6 ? "Pricey" : "" };
-      });
-    }
-  });
-
-  dash.calc("needs", {
-    title: "Roster needs by league",
-    description: "Youth pipeline by league and position: players on Keegan's roster, how many are young (QB 27 or under, RB/WR 25 or under, TE 26 or under), and a need level from the shortfall against a young-core target (QB 3 in 2-QB leagues, 2 in superflex; RB 3; WR 4 with 3 WR starters, else 3; TE 2). Age only, not talent.",
-    inputs: ["my_roster", "leagues"],
-    fn: function (my_roster, leagues) {
-      var out = [];
-      leagues.forEach(function (L) {
-        ["QB", "RB", "WR", "TE"].forEach(function (pos) {
-          var mine = my_roster.filter(function (r) { return r.league_id === L.league_id && r.pos === pos; });
-          var maxAge = pos === "QB" ? 27 : pos === "TE" ? 26 : 25;
-          var young = mine.filter(function (r) { return r.age != null && r.age <= maxAge; }).length;
-          var target = pos === "QB" ? (L.qb_slots === 2 ? 3 : 2) : pos === "RB" ? 3 : pos === "WR" ? (L.wr_slots === 3 ? 4 : 3) : 2;
-          var short = target - young;
-          out.push({ key: L.league_id + "|" + pos, league_id: L.league_id, pos: pos, count: mine.length, young: young, max_age: maxAge, target: target,
-            need: short >= 2 ? "High" : short === 1 ? "Medium" : "Low" });
+  // ---------- team needs panel ----------
+  function league() {
+    if (!M.leagues.length) return null;
+    if (!state.league || !M.leagues.some(function (l) { return l.league_id === state.league; })) state.league = M.leagues[0].league_id;
+    return M.leagues.filter(function (l) { return l.league_id === state.league; })[0];
+  }
+  function needsPanel(L, withNames) {
+    var box = el("section", "mx-panel mx-needs");
+    box.appendChild(el("h2", "mx-h plain", "Team needs"));
+    box.appendChild(el("div", "lg", L.my_team + " · " + L.league));
+    box.appendChild(el("div", "sect", "Offense"));
+    var needs = M.needs[L.league_id] || [];
+    needs.forEach(function (n) {
+      var r = el("div", "mx-need");
+      var g = el("span", "g", n.grade); g.style.setProperty("--gc", n.ratio >= 1 ? "var(--ok)" : n.ratio >= 0.5 ? "var(--warn)" : "var(--bad)");
+      var c = el("span", "c");
+      var a = el("span"); a.appendChild(el("b", null, String(n.count))); a.appendChild(document.createTextNode(" Active"));
+      var y = el("span"); y.appendChild(el("b", null, n.young + "/" + n.target)); y.appendChild(document.createTextNode(" Young"));
+      add(c, a, y);
+      add(r, el("span", "p", n.pos), g, c);
+      if (withNames) {
+        var nm = el("div", "names");
+        n.names.forEach(function (x) {
+          var s = el("span", x.slot !== "active" ? "dim" : null, x.name + (x.age != null ? " " + x.age : "") + (x.injury ? " · " + (x.injury === "Questionable" ? "Q" : x.injury) : ""));
+          nm.appendChild(s);
         });
-      });
-      return out;
-    }
-  });
-
-  dash.calc("targets", {
-    title: "Best targets at each of Keegan's picks",
-    description: "For each of Keegan's 2027 picks: the highest players on our board with their chance to still be there. Chance = how likely the league takes him at or after that pick, from his superflex market slot (normal curve, spread from his range across lists), with QBs moved earlier in 2-QB leagues and TEs later without TE premium.",
-    inputs: ["players", "leagues", "my_picks"],
-    fn: function (players, leagues, my_picks) {
-      function phi(z) { var t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2);
-        var pr = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - pr : pr; }
-      var out = [];
-      my_picks.forEach(function (pk) {
-        var L = leagues.filter(function (l) { return l.league_id === pk.league_id; })[0];
-        if (!L) return;
-        var cands = players.map(function (p) {
-          var mult = p.pos === "QB" ? (L.qb_slots === 2 ? 0.8 : 1) : p.pos === "TE" ? (L.te_premium > 0 ? 0.9 : 1.15) : 1;
-          var mu = (p.market_rank != null ? p.market_rank : 70) * mult;
-          var sd = Math.max(0.6, ((p.market_hi || 0) - (p.market_lo || 0)) / 5, mu * 0.22);
-          var chance = 1 - phi((pk.proj_overall - 0.5 - mu) / sd);
-          var val = p.overall_rank != null ? p.overall_rank : 35 + (p.market_rank != null ? p.market_rank : 80) * 0.6;
-          if (p.pos === "QB" && L.qb_slots === 2) val *= 0.85;
-          if (p.pos === "TE" && !(L.te_premium > 0)) val *= 1.15;
-          return { p: p, chance: chance, val: val };
-        }).filter(function (c) { return c.chance >= 0.15; })
-          .sort(function (a, b) { return a.val - b.val; }).slice(0, 6);
-        cands.forEach(function (c, i) {
-          out.push({ key: pk.pick_id + "|" + c.p.id, pick_id: pk.pick_id, league_id: pk.league_id, order: i + 1,
-            player_id: c.p.id, name: c.p.name, pos: c.p.pos, chance: Math.round(c.chance * 100) });
-        });
-      });
-      return out;
-    }
-  });
-
-  function flagOf(id) {
-    var f = dash.data("value_flags");
-    if (f.status !== "ok" || !f.data) return null;
-    var r = f.data.filter(function (x) { return x.id === id; })[0];
-    return r && r.flag ? r : null;
-  }
-  function cm(e, src, field, key, keyField) {
-    e.setAttribute("data-source", src); e.setAttribute("data-field", field);
-    e.setAttribute("data-where", (keyField || "key") + "=" + encodeURIComponent(key));
-    return e;
-  }
-
-  function renderMyDraft() {
-    var box = document.getElementById("rb-mydraft");
-    box.textContent = "";
-    var ld = dash.data("leagues"), pd = dash.data("players");
-    if (ld.status !== "ok" || pd.status !== "ok") {
-      box.appendChild(el("div", "rb-empty", ld.status === "loading" || pd.status === "loading" ? "Loading your leagues…" : "League data didn’t load."));
-      return;
-    }
-    if (!state.league || !ld.data.some(function (l) { return l.league_id === state.league; })) state.league = ld.data[0].league_id;
-    var L = ld.data.filter(function (l) { return l.league_id === state.league; })[0];
-    var sw = el("div", "rb-lgsw");
-    ld.data.forEach(function (l) {
-      var b = el("button", "rb-tab", l.league);
-      b.type = "button"; b.setAttribute("aria-selected", String(l.league_id === state.league));
-      b.addEventListener("click", function () { state.league = l.league_id; dash.setParams({ league: l.league_id }); render(); });
-      sw.appendChild(b);
-    });
-    box.appendChild(sw);
-
-    var hd = el("div", "rb-lghead");
-    hd.id = "my-league";
-    var h1 = el("div", "t");
-    h1.appendChild(cm(el("span", null, L.my_team), "leagues", "my_team", L.league_id, "league_id"));
-    hd.appendChild(h1);
-    var meta = el("div", "rb-frow");
-    function lb(k, v, field) { var x = el("span", "rb-fbox"); x.appendChild(el("span", "k", k)); x.appendChild(cm(el("span", "v", fmt(v)), "leagues", field, L.league_id, "league_id")); return x; }
-    meta.appendChild(lb("Record", L.record, "record"));
-    meta.appendChild(lb("Standing", L.standing, "standing"));
-    meta.appendChild(lb("QB", L.qb_format, "qb_format"));
-    meta.appendChild(lb("TE premium", L.te_premium, "te_premium"));
-    meta.appendChild(lb("WR slots", L.wr_slots, "wr_slots"));
-    hd.appendChild(meta);
-    hd.appendChild(cm(el("div", "rb-muted lineup", L.lineup), "leagues", "lineup", L.league_id, "league_id"));
-    if (L.note) hd.appendChild(cm(el("div", "warn", L.note), "leagues", "note", L.league_id, "league_id"));
-    box.appendChild(hd);
-
-    // needs + roster
-    var grid = el("div", "rb-groups");
-    var nd = dash.data("needs"), rr = dash.data("my_roster");
-    var nc = el("div", "rb-group");
-    nc.id = "my-needs";
-    nc.appendChild(el("h4", null, "Roster needs · youth pipeline (age only, not talent)"));
-    ["QB", "RB", "WR", "TE"].forEach(function (pos) {
-      var n = nd.status === "ok" ? nd.data.filter(function (x) { return x.league_id === L.league_id && x.pos === pos; })[0] : null;
-      var row = el("div", "rb-need");
-      var c = el("span", "rb-pos"); c.style.setProperty("--pc", "var(--pos-" + pos + ")"); c.appendChild(el("span", null, pos));
-      row.appendChild(c);
-      if (n) {
-        row.appendChild(cm(el("span", "rb-pill " + (n.need === "High" ? "Low" : n.need === "Medium" ? "Medium" : "High"), n.need), "needs", "need", n.key));
-        var d = el("span", "rb-muted");
-        d.appendChild(cm(el("span", null, String(n.count)), "needs", "count", n.key));
-        d.appendChild(document.createTextNode(" rostered · "));
-        d.appendChild(cm(el("span", null, String(n.young)), "needs", "young", n.key));
-        d.appendChild(document.createTextNode(" age "));
-        d.appendChild(cm(el("span", null, String(n.max_age)), "needs", "max_age", n.key));
-        d.appendChild(document.createTextNode(" or under · young-core target "));
-        d.appendChild(cm(el("span", null, String(n.target)), "needs", "target", n.key));
-        row.appendChild(d);
+        r.appendChild(nm);
       }
-      var names = rr.status === "ok" ? rr.data.filter(function (x) { return x.league_id === L.league_id && x.pos === pos; })
-        .sort(function (a, b) { return (a.age || 99) - (b.age || 99); }) : [];
-      var nl = el("div", "rb-rlist");
-      names.forEach(function (x) {
-        var s = el("span", "rp" + (x.slot !== "active" ? " dim" : ""));
-        s.appendChild(cm(el("span", null, x.name), "my_roster", "name", x.row_id, "row_id"));
-        if (x.age != null) { s.appendChild(document.createTextNode(" ")); s.appendChild(cm(el("span", "rb-muted", String(x.age)), "my_roster", "age", x.row_id, "row_id")); }
-        if (x.injury) {
-          var rj = el("span", "rb-inj " + (x.injury === "Questionable" ? "soon" : x.injury === "IR" ? "season" : "out"), x.injury === "Questionable" ? "Q" : x.injury.toUpperCase());
-          rj.title = x.injury; rj.setAttribute("aria-label", x.injury);
-          s.appendChild(document.createTextNode(" ")); s.appendChild(rj);
-        }
-        nl.appendChild(s);
-      });
-      row.appendChild(nl);
-      nc.appendChild(row);
+      box.appendChild(r);
     });
-    grid.appendChild(nc);
-    box.appendChild(grid);
-
-    // picks with targets
-    var pk = dash.data("my_picks"), tg = dash.data("targets");
-    var picks = pk.status === "ok" ? pk.data.filter(function (x) { return x.league_id === L.league_id; }).sort(function (a, b) { return a.proj_overall - b.proj_overall; }) : [];
-    var ph = el("div", "rb-round-head", "Your 2027 picks · projected slot from current standings");
-    ph.id = "my-picks";
-    box.appendChild(ph);
-    if (!picks.length) box.appendChild(el("div", "rb-empty", "No 2027 picks found for this team."));
-    var pg = el("div", "rb-picks");
-    picks.forEach(function (p) {
-      var c = el("div", "rb-pick rb-mypick");
-      var top = el("div", "pk");
-      top.appendChild(cm(el("span", null, p.proj_pick), "my_picks", "proj_pick", p.pick_id, "pick_id"));
-      var via = el("span", "ov");
-      if (p.from_team === "Own") { via.appendChild(cm(el("span", null, p.from_team), "my_picks", "from_team", p.pick_id, "pick_id")); via.appendChild(document.createTextNode(" pick")); }
-      else { via.appendChild(document.createTextNode("via ")); via.appendChild(cm(el("span", null, p.from_team), "my_picks", "from_team", p.pick_id, "pick_id")); }
-      top.appendChild(via);
-      c.appendChild(top);
-      var list = tg.status === "ok" ? tg.data.filter(function (x) { return x.pick_id === p.pick_id; }).sort(function (a, b) { return a.order - b.order; }) : [];
-      var ul = el("div", "rb-tlist");
-      list.forEach(function (t) {
-        var pl = pd.data.filter(function (x) { return x.id === t.player_id; })[0];
-        var it = el("button", "rb-trow");
-        it.type = "button";
-        if (pl) it.appendChild(badge(pl, false));
-        var nm = el("span", "tn");
-        nm.appendChild(cm(el("span", null, t.name), "targets", "name", t.key));
-        var it2 = injTag(t.player_id);
-        if (it2) { nm.appendChild(document.createTextNode(" ")); nm.appendChild(it2); }
-        it.appendChild(nm);
-        var ps = el("span", "rb-pos"); ps.style.setProperty("--pc", "var(--pos-" + t.pos + ")");
-        ps.appendChild(cm(el("span", null, t.pos), "targets", "pos", t.key));
-        it.appendChild(ps);
-        if (pl && pl.tier) { var tr = el("span", "rb-tierchip", "T"); tr.appendChild(mark(el("span", null, String(pl.tier)), "tier", pl.id)); it.appendChild(tr); }
-        var ch = el("span", "chance " + (t.chance >= 70 ? "hi" : t.chance >= 40 ? "mid" : "lo"));
-        ch.appendChild(cm(el("span", null, String(t.chance)), "targets", "chance", t.key));
-        ch.appendChild(document.createTextNode("%"));
-        it.appendChild(ch);
-        it.addEventListener("click", function () { if (typeof openPlayer === "function") openPlayer(t.player_id); });
-        ul.appendChild(it);
-      });
-      c.appendChild(ul);
-      c.appendChild(el("div", "why", "% = chance he's still on the board at this pick. Tap a name for his card."));
-      pg.appendChild(c);
-    });
-    box.appendChild(pg);
+    if (needs.length) {
+      var srt = needs.slice().sort(function (a, b) { return b.ratio - a.ratio; });
+      var s1 = el("div", "mx-sw"); add(s1, el("span", null, "Strongest position"), el("b", null, srt[0].pos));
+      var s2 = el("div", "mx-sw"); add(s2, el("span", null, "Weakest position"), el("b", null, srt[srt.length - 1].pos));
+      box.style.marginBottom = "0";
+      add(box, el("div", null, ""), s1, s2);
+    }
+    box.appendChild(el("div", "note", "Young = players at or under " + needs.map(function (n) { return n.pos + " " + n.maxAge; }).join(", ") +
+      " against a young-core target. Age only, not talent."));
+    if (L.note) box.appendChild(el("div", "warn", L.note));
+    return box;
+  }
+  function coachBox() {
+    var box = document.getElementById("mx-coach");
+    box.textContent = "";
+    var L = league();
+    if (!L) return;
+    var t = el("div");
+    add(t, el("div", "who", "(GM) " + L.my_team), el("div", "sub", L.record + " · " + ord(L.standing) + " of " + L.teams + " · " + L.qb_format));
+    var sel = el("select"); sel.setAttribute("aria-label", "League");
+    M.leagues.forEach(function (l) { var o = el("option", null, l.league); o.value = l.league_id; if (l.league_id === state.league) o.selected = true; sel.appendChild(o); });
+    sel.addEventListener("change", function (e) { state.league = e.target.value; dash.setParams({ league: state.league }); render(); });
+    add(box, t, sel);
   }
 
-  var INJGROUPS = [
-    ["season", "Out for the season", "faller"], ["out", "Out", "faller"],
-    ["soon", "Questionable or expected back", "injury"], ["back", "Back on the field", "riser"]
-  ];
-  function renderInj() {
-    var box = document.getElementById("rb-inj");
-    box.textContent = "";
-    var d = dash.data("injuries"), cd = dash.data("changes"), pd = dash.data("players");
-    var top = el("div");
-    var t = el("h2", "rb-week-title", "Injury report");
-    t.id = "inj-title";
-    top.appendChild(t);
-    box.appendChild(top);
-    if (d.status !== "ok" || !d.data) {
-      box.appendChild(el("div", "rb-empty", d.status === "loading" ? "Loading injuries…" : "Injury notes didn’t load."));
+  // ---------- views ----------
+  function filtersBar(fav) {
+    var bar = el("div", "mx-filters");
+    var q = el("input", "mx-input"); q.type = "search"; q.placeholder = "Search player or school"; q.value = state.q; q.setAttribute("aria-label", "Search player or school");
+    q.addEventListener("input", function (e) { state.q = e.target.value; renderMainOnly(); });
+    bar.appendChild(q);
+    if (fav) {
+      var fs = el("select", "mx-select"); fs.setAttribute("aria-label", "Sort favorites");
+      [["overall", "Sort: Top 35 rank"], ["mock", "Sort: Mock draft pick"], ["pos", "Sort: Position, then rank"], ["prod", "Sort: 2026 yards"], ["name", "Sort: Name"]].forEach(function (o) {
+        var x = el("option", null, o[1]); x.value = o[0]; if (o[0] === state.favSort) x.selected = true; fs.appendChild(x);
+      });
+      fs.addEventListener("change", function (e) { state.favSort = e.target.value; dash.setParams({ favSort: state.favSort }); renderMainOnly(); });
+      bar.appendChild(fs);
+    } else {
+      var tg = el("select", "mx-select"); tg.setAttribute("aria-label", "Market tag");
+      [["", "All market tags"], ["Value", "Value only"], ["Pricey", "Pricey only"]].forEach(function (o) { var x = el("option", null, o[1]); x.value = o[0]; if (o[0] === state.tag) x.selected = true; tg.appendChild(x); });
+      tg.addEventListener("change", function (e) { state.tag = e.target.value; renderMainOnly(); });
+      var dc = el("select", "mx-select"); dc.setAttribute("aria-label", "Likely to declare");
+      [["", "All declare odds"], ["High", "High to declare"], ["Medium", "Medium"], ["Low", "Low"]].forEach(function (o) { var x = el("option", null, o[1]); x.value = o[0]; if (o[0] === state.declare) x.selected = true; dc.appendChild(x); });
+      dc.addEventListener("change", function (e) { state.declare = e.target.value; renderMainOnly(); });
+      add(bar, tg, dc);
+    }
+    return bar;
+  }
+  function boardView(main) {
+    var v = state.view, top = v === "TOP", fav = v === "FAV";
+    main.appendChild(filtersBar(fav));
+    var q = state.q.toLowerCase();
+    var rows = M.players.filter(function (p) {
+      if (fav) { if (!isFav(p.id)) return false; }
+      else if (top ? p.overall_rank == null : p.pos !== v) return false;
+      if (!fav && state.declare && p.declare_likelihood !== state.declare) return false;
+      if (!fav && state.tag) { var f = M.flag[p.id]; if (!f || f.flag !== state.tag) return false; }
+      if (q && (p.name + " " + p.school).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    }).sort(fav ? (FAVSORT[state.favSort] || FAVSORT.overall) : function (a, b) { return top ? a.overall_rank - b.overall_rank : a.rank - b.rank; });
+    state.navIds = rows.map(function (p) { return p.id; });
+    var list = el("div", "mx-list");
+    if (!rows.length) {
+      list.appendChild(el("div", "mx-empty", fav ? "No favorites yet. Tap the ☆ on any player to add him here." : "No players match those filters."));
+      main.appendChild(list);
       return;
     }
-    var last = cd.status === "ok" ? cd.data.map(function (r) { return r.type === "injury" ? r.week : ""; }).sort().pop() : "";
-    top.appendChild(el("p", "rb-mock-intro", "Every prospect on the board with an injury note, newest note per player, from the weekly board updates" +
-      (last ? " (latest injury notes: " + injDate(last) + ")" : "") + ". Each line shows the date it was written, so check for newer news before you draft. Tap a player for his card."));
-    if (!d.data.length) { box.appendChild(el("div", "rb-empty", "No injuries noted.")); return; }
-    var grid = el("div", "rb-groups");
-    INJGROUPS.forEach(function (g) {
-      var items = d.data.filter(function (r) { return r.code === g[0]; });
+    var lastTier = null;
+    rows.forEach(function (p, i) {
+      if (top && p.tier != null && p.tier !== lastTier) { list.appendChild(el("div", "mx-tier", "Tier " + p.tier)); lastTier = p.tier; }
+      list.appendChild(row(p, {
+        rank: fav ? i + 1 : top ? p.overall_rank : p.rank,
+        move: top || fav ? null : moveEl(p),
+        cols: boardCols(p, top),
+        mini: [posChip(p.pos, p.pos + p.rank), p.tier != null ? "Tier " + p.tier : null, projShort(p.draft_projection)]
+      }));
+    });
+    main.appendChild(list);
+  }
+
+  function mockView(main) {
+    main.appendChild(el("p", "mx-intro", "A 10-team, 4-round linear rookie draft for a superflex PPR league (QB, 2 RB, 3 WR, TE, 2 flex, superflex; no TE premium). Picks follow the consensus of fall 2026 superflex mocks and rankings, adjusted for 10 teams, no TE premium, and declare or injury risk. Tap a pick for the player's screen."));
+    var mix = el("div", "mx-mix");
+    POS.forEach(function (pos) { var n = M.mock.filter(function (r) { return r.pos === pos; }).length; var s = el("span"); add(s, posChip(pos), el("span", null, n + (n === 1 ? " pick" : " picks"))); mix.appendChild(s); });
+    main.appendChild(mix);
+    state.navIds = [];
+    var list = el("div", "mx-list");
+    [1, 2, 3, 4].forEach(function (rd) {
+      var rows = M.mock.filter(function (r) { return Number(r.round) === rd; }).sort(function (a, b) { return a.overall - b.overall; });
+      if (!rows.length) return;
+      list.appendChild(el("div", "mx-round", "Round " + rd));
+      rows.forEach(function (r) {
+        var p = M.byId[r.player_id];
+        if (!p) return;
+        state.navIds.push(p.id);
+        list.appendChild(row(p, {
+          rank: r.pick, rankCls: "pick", note: r.note,
+          cols: [
+            [r.sf_avg != null ? "Avg " + r.sf_avg : "—", "SF consensus", null, "sm"],
+            [diamond(p.tier), p.tier != null ? "Tier " + p.tier : "Unranked"],
+            [r.sf_range || "—", "Range", null, null],
+            [String(r.sf_sources), r.sf_sources === 1 ? "List" : "Lists", "c-dec", "big"]
+          ],
+          mini: [posChip(p.pos, p.pos + r.pos_rank), r.sf_avg != null ? "SF avg " + r.sf_avg : null, "range " + r.sf_range]
+        }));
+      });
+    });
+    main.appendChild(list);
+    if (M.sources.length) {
+      var so = el("section", "mx-panel mx-box method");
+      so.appendChild(el("h3", null, "Mocks and rankings used"));
+      var l = el("div", "mx-links");
+      M.sources.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).forEach(function (s) {
+        if (!/^https?:\/\//.test(s.url)) return;
+        var a = el("a", null, s.name + " (" + s.format + ", " + day(s.date) + ")"); a.href = s.url; a.target = "_blank"; a.rel = "noopener"; l.appendChild(a);
+      });
+      so.appendChild(l);
+      main.appendChild(so);
+    }
+  }
+
+  function myDraftView(main) {
+    var L = league();
+    if (!L) { main.appendChild(el("div", "mx-empty", "No leagues found.")); return; }
+    var picks = M.picks.filter(function (x) { return x.league_id === L.league_id; }).sort(function (a, b) { return a.proj_overall - b.proj_overall; });
+    main.appendChild(el("p", "mx-intro", L.my_team + " · " + L.record + " · " + ord(L.standing) + " of " + L.teams + " · " + L.lineup +
+      (L.te_premium ? " · TE premium " + L.te_premium : "") + ". For each of your 2027 picks (projected slot from current standings), the best players on our board with the chance he's still there."));
+    if (!picks.length) { main.appendChild(el("div", "mx-empty", "No 2027 picks found for this team.")); return; }
+    state.navIds = [];
+    picks.forEach(function (pk) {
+      var hd = el("div", "mx-pickhd");
+      add(hd, el("span", "pk", pk.proj_pick), el("span", "via", pk.from_team === "Own" ? "Own pick" : "Via " + pk.from_team));
+      main.appendChild(hd);
+      var list = el("div", "mx-list");
+      (M.targets[pk.pick_id] || []).forEach(function (t, i) {
+        var p = t.p;
+        if (state.navIds.indexOf(p.id) < 0) state.navIds.push(p.id);
+        var cls = t.chance >= 70 ? "hi" : t.chance >= 40 ? "mid" : "lo";
+        list.appendChild(row(p, {
+          rank: i + 1,
+          cols: [
+            [projShort(p.draft_projection), "Projection", null, "sm"],
+            [diamond(p.tier), p.tier != null ? "Tier " + p.tier : "Unranked"],
+            [p.overall_rank != null ? "#" + p.overall_rank : p.pos + p.rank, p.overall_rank != null ? "Top 35" : "Pos. rank"],
+            [t.chance + "%", "Still there", "c-dec", "big " + cls]
+          ],
+          mini: [posChip(p.pos, p.pos + p.rank), p.tier != null ? "Tier " + p.tier : null, (function () { var s = el("b", null, t.chance + "% still there"); s.style.color = cls === "hi" ? "var(--ok)" : cls === "mid" ? "var(--warn)" : "var(--bad)"; return s; })()]
+        }));
+      });
+      if (!list.childNodes.length) list.appendChild(el("div", "mx-empty", "No likely targets at this slot."));
+      main.appendChild(list);
+    });
+  }
+
+  function itemFor(p, rightNode, hl, dt) {
+    var it = el("div", "mx-item");
+    it.setAttribute("role", "button"); it.tabIndex = 0;
+    var who = el("div", "who");
+    add(who, crest(p), el("span", null, p.name), posChip(p.pos, p.pos + p.rank), el("span", "sch", p.school));
+    add(it, who, rightNode);
+    if (hl) it.appendChild(el("div", "hl", hl));
+    if (dt) it.appendChild(el("div", "dt", dt));
+    var go = function () { openCard(p.id); };
+    it.addEventListener("click", go);
+    it.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    return it;
+  }
+  function injView(main) {
+    var last = M.changes.filter(function (r) { return r.type === "injury"; }).map(function (r) { return r.week; }).sort().pop();
+    main.appendChild(el("p", "mx-intro", "Every prospect on the board with an injury note, newest note per player, from the weekly board updates" +
+      (last ? " (latest injury notes: " + day(last) + ")" : "") + ". Each line shows the date it was written, so check for newer news before you draft."));
+    state.navIds = M.injList.map(function (r) { return r.id; });
+    if (!M.injList.length) { main.appendChild(el("div", "mx-empty", "No injuries noted.")); return; }
+    var grid = el("div", "mx-groups");
+    [["season", "Out for the season", "faller"], ["out", "Out", "faller"], ["soon", "Questionable or expected back", "injury"], ["back", "Back on the field", "riser"]].forEach(function (g) {
+      var items = M.injList.filter(function (r) { return r.code === g[0]; });
       if (!items.length) return;
-      var card = el("div", "rb-group " + g[2]);
-      card.id = "inj-" + g[0];
-      card.appendChild(el("h4", null, g[1] + " · " + items.length));
+      var card = el("section", "mx-panel mx-group " + g[2]);
+      card.appendChild(el("h2", "mx-h", g[1] + " · " + items.length));
       items.forEach(function (r) {
-        var pl = pd.status === "ok" ? pd.data.filter(function (x) { return x.id === r.id; })[0] : null;
-        var it = el("div", "rb-item rb-injitem");
-        it.setAttribute("role", "button"); it.tabIndex = 0;
-        var who = el("div", "who");
-        if (pl) who.appendChild(badge(pl, false));
-        var wn = el("span", null, r.name);
-        who.appendChild(wn);
-        var pc = el("span", "rb-pos", r.pos + r.rank); pc.style.setProperty("--pc", "var(--pos-" + r.pos + ")");
-        who.appendChild(pc);
-        if (pl) { var sc = el("span", "rb-muted sch", pl.school); who.appendChild(sc); }
-        it.appendChild(who);
-        var rk = el("div", "ranks");
-        rk.appendChild(el("span", "rb-injpill " + r.code, r.status));
-        it.appendChild(rk);
-        if (r.headline) it.appendChild(el("div", "hl", r.headline));
-        it.appendChild(el("div", "dt", r.detail + " (" + injDate(r.week) + ")"));
-        var go = function () { openPlayer(r.id); };
-        it.addEventListener("click", go);
-        it.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
-        card.appendChild(it);
+        var p = M.byId[r.id];
+        card.appendChild(itemFor(p, el("span", "mx-pill " + r.code, r.status), r.headline, r.detail + " (" + day(r.week) + ")"));
       });
       grid.appendChild(card);
     });
-    box.appendChild(grid);
+    main.appendChild(grid);
   }
-
-  function renderInner() {
-    var pr = dash.data("players"), cr = dash.data("career");
-    var list = document.getElementById("rb-list");
-    var upd = document.getElementById("board-updated");
-    list.textContent = "";
-    VIEWS.forEach(function (p) {
-      var b = document.getElementById("tab-" + p);
-      b.setAttribute("aria-selected", String(p === state.pos));
-      var n = "";
-      if (pr.status === "ok" && POS.indexOf(p) >= 0) n = pr.data.filter(function (r) { return r.pos === p; }).length;
-      if (pr.status === "ok" && p === "FAV") n = favCount(pr.data);
-      if (p === "INJ") n = injCount() || "";
-      b.querySelector(".n").textContent = n;
+  function weekView(main) {
+    var weeks = Array.from(new Set(M.changes.map(function (r) { return r.week; }))).sort().reverse();
+    if (!weeks.length) { main.appendChild(el("div", "mx-empty", "No weekly notes yet.")); return; }
+    if (!state.week || weeks.indexOf(state.week) < 0) state.week = weeks[0];
+    var bar = el("div", "mx-filters");
+    var sel = el("select", "mx-select"); sel.setAttribute("aria-label", "Week");
+    weeks.forEach(function (w) { var o = el("option", null, "Week of " + day(w, true)); o.value = w; if (w === state.week) o.selected = true; sel.appendChild(o); });
+    sel.addEventListener("change", function (e) { state.week = e.target.value; renderMainOnly(); });
+    bar.appendChild(sel);
+    main.appendChild(bar);
+    var rows = M.changes.filter(function (r) { return r.week === state.week; });
+    ["summary", "method"].forEach(function (t) {
+      rows.filter(function (r) { return r.type === t; }).forEach(function (r) {
+        var s = el("section", "mx-panel mx-box" + (t === "method" ? " method" : ""));
+        add(s, el("h3", null, r.headline), el("p", null, r.detail));
+        main.appendChild(s);
+      });
     });
-    var isWeek = state.pos === "WEEK", isMock = state.pos === "MOCK", isMy = state.pos === "MYD", isInj = state.pos === "INJ", other = isWeek || isMock || isMy || isInj;
-    document.getElementById("rb-inj").hidden = !isInj;
-    document.getElementById("rb-mydraft").hidden = !isMy;
-    document.getElementById("rb-week").hidden = !isWeek;
-    document.getElementById("rb-mock").hidden = !isMock;
-    list.hidden = other;
-    if (other) { document.getElementById("rb-focus").hidden = true; document.getElementById("rb-crestpick").hidden = true; }
-    document.getElementById("rb-favsort").hidden = state.pos !== "FAV";
-    document.getElementById("rb-declare").hidden = state.pos === "FAV";
-    document.getElementById("rb-cols").style.display = other ? "none" : "";
-    document.getElementById("rb-filters").style.visibility = other ? "hidden" : "";
-    if (isInj) { upd.textContent = "Who's hurt and who's back"; renderInj(); return; }
-    if (isWeek) { upd.textContent = "Week-to-week changes and why"; renderWeek(); return; }
-    if (isMock) { upd.textContent = "10-team superflex · 4 rounds"; renderMock(); return; }
-    if (isMy) { upd.textContent = "Your leagues · picks · targets"; renderMyDraft(); return; }
-    document.getElementById("col-26").textContent = "2026 " + HEAD26[state.pos];
-    if (pr.status !== "ok") {
-      upd.textContent = "—";
-      list.appendChild(el("div", "rb-empty", pr.status === "loading" ? "Loading prospects…" : "Prospect data didn’t load."));
-      return;
-    }
-    upd.textContent = LABEL[state.pos] + " · ranked by blended big boards";
-    var careerAll = cr.status === "ok" ? cr.data : [];
-    var top = state.pos === "TOP";
-    var fav = state.pos === "FAV";
-    var rows = pr.data.filter(function (r) {
-      if (fav) { if (!isFav(r.id)) return false; }
-      else if (top ? r.overall_rank == null : r.pos !== state.pos) return false;
-      if (state.declare && r.declare_likelihood !== state.declare) return false;
-      if (state.tag) { var tf = flagOf(r.id); if (!tf || tf.flag !== state.tag) return false; }
-      if (state.q && (r.name + " " + r.school).toLowerCase().indexOf(state.q) < 0) return false;
-      return true;
-    }).sort(fav ? FAVSORT[state.favSort] || FAVSORT.overall : function (a, b) { return top ? a.overall_rank - b.overall_rank : a.rank - b.rank; });
-    state.navIds = rows.map(function (r) { return r.id; });
-    if (!rows.length) {
-      document.getElementById("rb-focus").hidden = true;
-      renderCrestPick(pr.data.filter(function (r) { return r.overall_rank === 1; })[0] || pr.data[0]);
-      list.appendChild(el("div", "rb-empty", fav ? "No favorites yet. Tap the ☆ next to any player to add him here." : "No players match those filters."));
-      return;
-    }
-    if (!state.focus || !rows.some(function (r) { return r.id === state.focus; })) state.focus = rows[0].id;
-    document.getElementById("rb-focus").hidden = false;
-    renderFocus(rows.filter(function (r) { return r.id === state.focus; })[0], rows.length);
-    renderCrestPick(rows.filter(function (r) { return r.id === state.focus; })[0]);
-
-    var lastTier = null;
-    rows.forEach(function (p) {
-      if (top && p.tier != null && p.tier !== lastTier) {
-        var th = el("div", "rb-tierhd", "Tier ");
-        th.appendChild(mark(el("span", null, String(p.tier)), "tier", p.id));
-        list.appendChild(th);
-        lastTier = p.tier;
-      }
-      var row = el("div", "rb-row");
-      row.setAttribute("role", "button"); row.tabIndex = 0;
-      row.setAttribute("aria-expanded", String(state.open === p.id));
-      row.id = "row-" + p.id;
-      applyTint(row, p);
-
-      var cS = el("div", "c-star");
-      var stb = el("button", "rb-star" + (isFav(p.id) ? " on" : ""), isFav(p.id) ? "★" : "☆");
-      stb.type = "button";
-      stb.setAttribute("aria-pressed", String(isFav(p.id)));
-      stb.setAttribute("aria-label", (isFav(p.id) ? "Remove " : "Add ") + p.name + (isFav(p.id) ? " from" : " to") + " favorites");
-      stb.addEventListener("click", function (e) { e.stopPropagation(); toggleFav(p.id); });
-      stb.addEventListener("keydown", function (e) { e.stopPropagation(); });
-      cS.appendChild(stb);
-      var c1 = el("div", "c-rank");
-      if (fav) c1.appendChild(el("div", "rb-rank", String(rows.indexOf(p) + 1)));
-      else c1.appendChild(mark(el("div", "rb-rank", String(top ? p.overall_rank : p.rank)), top ? "overall_rank" : "rank", p.id));
-      if (!top && !fav) {
-        var mv = moveOf(p.id);
-        if (mv === "NEW") c1.appendChild(mark(el("span", "rb-move new", "NEW"), "move", p.id, "rank_moves"));
-        else if (mv) {
-          var mvs = el("span", "rb-move " + (mv > 0 ? "up" : "down"), mv > 0 ? "▲" : "▼");
-          mvs.appendChild(mark(el("span", null, String(Math.abs(mv))), "move", p.id, "rank_moves"));
-          mvs.setAttribute("aria-label", (mv > 0 ? "up " : "down ") + Math.abs(mv) + " since last week");
-          c1.appendChild(mvs);
+    state.navIds = [];
+    var grid = el("div", "mx-groups");
+    [["riser", "Risers", "riser"], ["faller", "Fallers", "faller"], ["added", "Added to the board", ""], ["removed", "Removed from the board", ""], ["injury", "Injuries and availability", "injury"]].forEach(function (g) {
+      var items = rows.filter(function (r) { return r.type === g[0]; });
+      if (!items.length) return;
+      var card = el("section", "mx-panel mx-group " + g[2]);
+      card.appendChild(el("h2", "mx-h", g[1] + " · " + items.length));
+      items.forEach(function (r) {
+        var rk = el("span", "rk", (r.from_rank != null ? r.board + r.from_rank : "") + (r.from_rank != null && r.to_rank != null ? " → " : "") + (r.to_rank != null ? r.board + r.to_rank : ""));
+        var p = M.byId[r.player_id];
+        if (p) {
+          if (state.navIds.indexOf(p.id) < 0) state.navIds.push(p.id);
+          card.appendChild(itemFor(p, rk, r.headline, r.detail));
+        } else {
+          var it = el("div", "mx-item"); it.style.cursor = "default";
+          var who = el("div", "who"); add(who, el("span", null, r.name), r.pos ? posChip(r.pos) : null);
+          add(it, who, rk, el("div", "hl", r.headline), el("div", "dt", r.detail));
+          card.appendChild(it);
         }
-      }
-      var c2 = el("div", "c-name");
-      var nm = el("div", "rb-name");
-      nm.appendChild(el("span", "rb-caret", "▶"));
-      nm.appendChild(mark(el("span", "nm", p.name), "name", p.id));
-      var vf = flagOf(p.id);
-      if (vf) {
-        var vc = el("span", "rb-vflag " + vf.flag.toLowerCase());
-        vc.appendChild(cm(el("span", null, vf.flag), "value_flags", "flag", p.id, "id"));
-        vc.title = vf.flag === "Value" ? "The market takes him later than our board would" : "The market takes him earlier than our board would";
-        nm.appendChild(vc);
-      }
-      var it0 = injTag(p.id);
-      if (it0) nm.appendChild(it0);
-      c2.appendChild(nm);
-      var cP = el("div", "ctr c-pos");
-      var chip = el("span", "rb-pos");
-      chip.style.setProperty("--pc", "var(--pos-" + p.pos + ")");
-      chip.appendChild(mark(el("span", null, p.pos), "pos", p.id));
-      if (top || fav) chip.appendChild(mark(el("span", null, String(p.rank)), "rank", p.id));
-      cP.appendChild(chip);
-      var c3 = el("div", "rb-school c-school");
-      c3.appendChild(badge(p));
-      c3.appendChild(mark(el("span", "sn", p.school), "school", p.id));
-      var cC = mark(el("div", "ctr c-cl", fmt(p.class)), "class", p.id);
-      var c4 = mark(el("div", "num c-age", fmt(p.age)), "age", p.id);
-      var c5 = mark(el("div", "num c-ht", fmt(p.height)), "height", p.id);
-      var c6 = mark(el("div", "num c-wt", fmt(p.weight)), "weight", p.id);
-      var c7 = el("div", "num rb-stat26 c-26");
-      if (top || fav) c7.appendChild(el("span", "lbl", p.pos === "QB" ? "pass " : p.pos === "RB" ? "rush " : "rec "));
-      c7.appendChild(mark(el("span", null, fmt(p.s26_yds)), "s26_yds", p.id));
-      c7.appendChild(el("span", "lbl", " / "));
-      c7.appendChild(mark(el("span", null, fmt(p.s26_td)), "s26_td", p.id));
-      var cD = el("div", "ctr c-dec");
-      cD.appendChild(mark(el("span", "rb-pill " + (p.declare_likelihood || ""), p.declare_likelihood || "—"), "declare_likelihood", p.id));
-      var c8 = el("div", "rb-proj c-proj");
-      c8.appendChild(mark(el("span", null, p.draft_projection || "—"), "draft_projection", p.id));
-      [cS, c1, c2, cP, c3, cC, c4, c5, c6, c7, cD, c8].forEach(function (c) { row.appendChild(c); });
-      if (state.focus === p.id) row.classList.add("sel");
-      var openRow = function () {
-        state.open = state.open === p.id ? null : p.id;
-        state.focus = p.id;
-        render();
-        var r = document.getElementById("row-" + p.id);
-        if (r) r.focus({ preventScroll: true });
-      };
-      row.setAttribute("aria-expanded", String(state.open === p.id));
-      row.addEventListener("click", openRow);
-      row.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openRow(); } });
-      list.appendChild(row);
-      if (state.open === p.id && !isMobile()) {
-        var cRows = careerAll.filter(function (r) { return r.player_id === p.id; })
-          .sort(function (a, b) { return a.season - b.season; });
-        list.appendChild(detail(p, cRows));
-      }
+      });
+      grid.appendChild(card);
     });
+    main.appendChild(grid);
   }
 
-  // ---------- phone layout: bottom nav, board chips, full-screen player card ----------
-  var mq = window.matchMedia("(max-width: 680px)");
-  function isMobile() { return mq.matches; }
-  var BOARD = ["TOP", "QB", "RB", "WR", "TE"];
-  var lastBoard = BOARD.indexOf(state.pos) >= 0 ? state.pos : "TOP";
-  var savedView = state.pos;
-  var root = document.getElementById("rookie-board");
-
-  function icon(d) {
-    var s = sv("svg", { viewBox: "0 0 24 24", width: "22", height: "22", fill: "none", stroke: "currentColor",
-      "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" });
-    sv("path", { d: d }, s);
-    return s;
+  // ---------- player screen ----------
+  var card = document.getElementById("mx-card");
+  var cardPushed = false;
+  function openCard(id) { state.open = id; render(); }
+  function closeCard() { state.open = null; render(); }
+  function stepCard(d) {
+    var ids = state.navIds, i = ids.indexOf(state.open);
+    if (i < 0 || !ids[i + d]) return;
+    state.open = ids[i + d]; renderCard(true);
   }
-  function setView(p) {
-    if (state.pos !== p) { state.pos = p; state.open = null; state.focus = null; render(); }
+  function setCardTab(t) { state.cardTab = t; dash.setParams({ cardTab: t }); renderCard(false); }
+  function stepTab(d) {
+    var i = CTABS.map(function (t) { return t[0]; }).indexOf(state.cardTab);
+    setCardTab(CTABS[(i + d + CTABS.length) % CTABS.length][0]);
+  }
+
+  function key(v, l, cls) { var d = el("div"); add(d, el("div", "v" + (cls ? " " + cls : ""), v), el("div", "l", l)); return d; }
+
+  function tabReport(p, body) {
+    var j = M.inj[p.id];
+    if (j) {
+      var ib = el("section", "mx-injbox " + j.code);
+      var top = el("div", "top");
+      add(top, el("span", "mx-pill " + j.code, j.status), j.headline ? el("span", null, j.headline) : null, el("span", "d", "as of " + day(j.week)));
+      add(ib, top, el("p", null, j.detail));
+      body.appendChild(ib);
+    }
+    var panel = el("section", "mx-cpanel");
+    var g3 = el("div", "mx-grid3");
+    // board rank
+    var c1 = el("div");
+    c1.appendChild(el("h3", "mx-h", p.overall_rank != null ? "Top 35 rank" : "Position rank"));
+    var bn = el("div", "mx-bignum");
+    add(bn, el("div", "v", p.overall_rank != null ? String(p.overall_rank) : p.pos + p.rank),
+      el("div", "of", p.overall_rank != null ? "of 35 · " + p.pos + p.rank + " on our board" : "of " + M.posCount[p.pos] + " " + p.pos + "s on our board"),
+      el("div", "t", p.overall_note || p.summary || ""));
+    c1.appendChild(bn);
+    // profile
+    var c2 = el("div");
+    c2.appendChild(el("h3", "mx-h", "Player profile"));
+    var pr = el("div", "mx-prof");
+    [["Height", p.height], ["Weight", p.weight != null ? p.weight + " lbs" : null], ["Age", p.age != null ? p.age + " (draft day)" : null], ["College", p.school],
+      ["Class", p.class], ["Archetype", p.player_type], ["Birth date", p.dob], ["Formerly", p.prev_schools]].forEach(function (x) {
+      if (x[0] === "Formerly" && !x[1]) return;
+      add(pr, el("div", "k", x[0] + ":"), el("div", "v", fmt(x[1])));
+    });
+    var dk = el("div", "v"); dk.appendChild(el("span", "mx-pill " + (p.declare_likelihood || ""), p.declare_likelihood || "—"));
+    add(pr, el("div", "k", "Declare:"), dk);
+    c2.appendChild(pr);
+    // 2026 report
+    var c3 = el("div");
+    var sc = M.score[p.id];
+    var h3 = el("h3", "mx-h", "2026 report");
+    if (sc != null) h3.appendChild(el("span", "x", sc.toFixed(1)));
+    c3.appendChild(h3);
+    var rep = el("div", "mx-rep");
+    (M.report[p.id] || []).forEach(function (r) {
+      var line = el("div", "r");
+      var top1 = r.rank === 1 && r.n > 2;
+      add(line, el("span", "s" + (top1 ? " on" : ""), "★"), el("span", "k", r.label),
+        el("span", "val", r.v == null ? "—" : num(r.v, r.fmt) + r.suf),
+        el("span", "rk" + (top1 ? " top" : ""), r.rank ? ord(r.rank) + " " + p.pos : "—"));
+      rep.appendChild(line);
+    });
+    c3.appendChild(rep);
+    c3.appendChild(el("div", "mx-gnote", (p.s26_through ? "2026 to date, through " + day(p.s26_through) + ". " : "") +
+      "Rank among the " + M.posCount[p.pos] + " " + p.pos + "s on this board. Score: average percentile of his production grades, 0–10."));
+    add(g3, c1, c2, c3);
+    panel.appendChild(g3);
+    // top skills + talent
+    var sk = el("div", "mx-sub");
+    sk.appendChild(el("h3", "mx-h", "Top skills"));
+    var row3 = el("div", "mx-skills");
+    var best = (M.grades[p.id] || []).filter(function (g) { return g.grade; }).sort(function (a, b) { return b.pct - a.pct; }).slice(0, 3);
+    best.forEach(function (g) {
+      var s = el("div", "mx-skill");
+      var t = el("div", "mx-tile", g.grade); t.style.setProperty("--gcol", gcol(g.grade));
+      add(s, t, el("div", "lb", g.label), el("div", "sub", ord(g.rank) + " of " + g.n));
+      row3.appendChild(s);
+    });
+    for (var i = best.length; i < 3; i++) { var e = el("div", "mx-skill"); e.appendChild(el("div", "sub", "")); row3.appendChild(e); }
+    var tal = el("div", "mx-talent");
+    add(tal, el("div", "t", "Tier"), diamond(p.tier, true),
+      el("div", "sub", p.tier != null ? (p.overall_rank != null ? "Top 35 · #" + p.overall_rank : "Last week's Top 35") : "Outside the Top 35"));
+    row3.appendChild(tal);
+    sk.appendChild(row3);
+    panel.appendChild(sk);
+    body.appendChild(panel);
+  }
+
+  function tabGrades(p, body) {
+    var wrap = el("div", "mx-gwrap");
+    var panel = el("section", "mx-cpanel");
+    panel.appendChild(el("h3", "mx-h", "Core grades"));
+    var grid = el("div", "mx-ggrid");
+    (M.grades[p.id] || []).forEach(function (g) {
+      var c = el("div", "mx-gcell");
+      c.style.setProperty("--gcol", gcol(g.grade));
+      var dv = g.v == null ? "no data" : (g.key === "mkt" ? "SF market #" + num(g.v) : num(g.v, g.fmt) + (/share|dom|acc|tdr|sec|bdm/.test(g.key) ? "%" : "")) + (g.rank ? " · " + ord(g.rank) + " of " + g.n : "");
+      add(c, el("div", "k", g.label), el("div", "v" + (g.grade ? "" : " na"), g.grade || "—"), el("div", "bar"), el("div", "d", dv));
+      grid.appendChild(c);
+    });
+    panel.appendChild(grid);
+    panel.appendChild(el("div", "mx-gnote", "Grades rank him against the other " + M.posCount[p.pos] + " " + p.pos + "s on this board (A+ = top 3%, C = middle, F = bottom 13%), using 2026 stats per game where it applies. Lower is better for ball security (INT rate), breakout age, market rank and age. They describe production on paper, not film."));
+    wrap.appendChild(panel);
+    var L = league();
+    if (L) wrap.appendChild(needsPanel(L, false));
+    body.appendChild(wrap);
+  }
+
+  function tabProd(p, body) {
+    var panel = el("section", "mx-cpanel");
+    var s = M.s26[p.id] || {};
+    function rating(k, v, d, pct, sub) {
+      var r = el("div", "mx-rating");
+      var bar = el("div", "bar"), i = el("i");
+      if (pct != null) { i.style.width = Math.max(4, Math.min(100, pct)) + "%"; r.style.setProperty("--gcol", pct >= 66 ? "var(--ok)" : pct >= 36 ? "var(--warn)" : "var(--bad)"); }
+      bar.appendChild(i);
+      add(r, el("div", "k", k), el("div", "v", v), bar, sub ? el("div", "d", sub) : null);
+      return r;
+    }
+    var gmap = {}; (M.grades[p.id] || []).forEach(function (g) { gmap[g.key] = g; });
+    panel.appendChild(el("h3", "mx-h", "2026 production"));
+    var a = el("div", "mx-ratings");
+    if (p.pos === "QB") {
+      a.appendChild(rating("Games", fmt(s.games)));
+      a.appendChild(rating("Pass yds", fmt(s.pass_yds), null, gmap.pyg && gmap.pyg.pct));
+      a.appendChild(rating("Pass TD", fmt(s.pass_td), null, gmap.tdr && gmap.tdr.pct));
+      a.appendChild(rating("Comp %", s.att ? num(100 * s.cmp / s.att, 1) : "—", null, gmap.acc && gmap.acc.pct));
+      a.appendChild(rating("Yds / att", s.att ? num(s.pass_yds / s.att, 1) : "—", null, gmap.ypa && gmap.ypa.pct));
+      a.appendChild(rating("INT", fmt(s.int), null, gmap.sec && gmap.sec.pct));
+      a.appendChild(rating("Rush yds", fmt(s.rush_yds), null, gmap.ryg && gmap.ryg.pct));
+      a.appendChild(rating("Rush TD", fmt(s.rush_td), null, gmap.rtd && gmap.rtd.pct));
+    } else {
+      a.appendChild(rating("Games", fmt(s.games)));
+      if (p.pos === "RB") {
+        a.appendChild(rating("Rush yds", fmt(s.rush_yds), null, gmap.ryg && gmap.ryg.pct));
+        a.appendChild(rating("Yds / carry", s.rush_att ? num(s.rush_yds / s.rush_att, 1) : "—", null, gmap.ypc && gmap.ypc.pct));
+        a.appendChild(rating("Rush TD", fmt(s.rush_td), null, gmap.rtd && gmap.rtd.pct));
+      }
+      a.appendChild(rating("Catches", fmt(s.rec), null, (gmap.cpg || gmap.rcg || {}).pct));
+      a.appendChild(rating("Rec yds", fmt(s.rec_yds), null, (gmap.ryg && p.pos !== "RB" ? gmap.ryg : gmap.rcy || {}).pct));
+      a.appendChild(rating("Rec TD", fmt(s.rec_td), null, gmap.rtd && p.pos !== "RB" ? gmap.rtd.pct : null));
+      a.appendChild(rating("Yards share", p.share_yds != null ? p.share_yds + "%" : "—", null, gmap.shr && gmap.shr.pct));
+      if (p.pos !== "RB") a.appendChild(rating("TD share", p.share_td != null ? p.share_td + "%" : "—", null, gmap.tds && gmap.tds.pct));
+      a.appendChild(rating("Dominator", p.dominator != null ? p.dominator + "%" : "—", null, gmap.dom && gmap.dom.pct));
+    }
+    panel.appendChild(a);
+    if (p.pos !== "QB") {
+      var b = el("div", "mx-sub");
+      b.appendChild(el("h3", "mx-h", "Breakout profile"));
+      var r2 = el("div", "mx-ratings");
+      r2.appendChild(rating("Breakout age", p.breakout_age != null ? num(p.breakout_age, 1) : "—", null, gmap.bo && gmap.bo.pct, p.breakout_season ? "Season " + p.breakout_season : null));
+      r2.appendChild(rating("Best dominator", p.best_dominator != null ? p.best_dominator + "%" : "—", null, gmap.bdm && gmap.bdm.pct));
+      if (p.pos !== "RB" || p.yptpa_2026) {
+        r2.appendChild(rating("Yds / team att '26", p.yptpa_2026 != null ? num(p.yptpa_2026, 2) : "—", null, gmap.yta && gmap.yta.pct));
+        r2.appendChild(rating("Best yds / team att", p.yptpa_best != null ? num(p.yptpa_best, 2) : "—"));
+      }
+      b.appendChild(r2);
+      if (p.breakout_status) b.appendChild(el("div", "mx-gnote", p.breakout_status));
+      b.appendChild(el("div", "mx-gnote", "Breakout = first college season with a dominator of " + (p.pos === "TE" ? "15" : "20") + "%+ (age on Sept. 1; 19 or under is elite). Dominator = share of team yards and TDs; 30%+ is elite for a WR, 20%+ for a TE. Yards per team pass attempt stands in for yards per route run: 2.0+ strong, 2.5+ elite."));
+      panel.appendChild(b);
+    }
+    var c = el("div", "mx-sub");
+    c.appendChild(el("h3", "mx-h", "Superflex market"));
+    var r3 = el("div", "mx-ratings");
+    r3.appendChild(rating("Market #", p.market_rank != null ? String(p.market_rank) : "—", null, gmap.mkt && gmap.mkt.pct));
+    r3.appendChild(rating("Avg slot", p.market_avg != null ? num(p.market_avg, 1) : "—"));
+    r3.appendChild(rating("Range", p.market_lo != null ? p.market_lo + "–" + p.market_hi : "—"));
+    r3.appendChild(rating("Lists", fmt(p.market_n)));
+    var mp = mockPick(p.id);
+    r3.appendChild(rating("Our mock", mp ? mp.pick : "—"));
+    var f = M.flag[p.id];
+    r3.appendChild(rating("Market tag", f ? f.flag : "—", null, null, f ? (f.gap > 0 ? "+" : "") + f.gap + " vs our board" : null));
+    c.appendChild(r3);
+    panel.appendChild(c);
+    var land = el("div", "mx-sub");
+    land.appendChild(el("h3", "mx-h", "NFL landing spot"));
+    if (p.nfl_team) {
+      var r4 = el("div", "mx-ratings");
+      add(r4, rating("Team", p.nfl_team), rating("Round", fmt(p.nfl_round)), rating("Pick", fmt(p.nfl_pick)));
+      land.appendChild(r4);
+      if (p.landing_note) land.appendChild(el("div", "mx-gnote", p.landing_note));
+    } else land.appendChild(el("div", "mx-gnote", "Fills in after the NFL Draft (April 22, 2027): team, round, pick and depth chart."));
+    panel.appendChild(land);
+    body.appendChild(panel);
+  }
+
+  var COLS = {
+    QB: [["games", "G"], ["cmp", "Cmp"], ["att", "Att"], ["pass_yds", "Pass Yds"], ["pass_td", "Pass TD"], ["int", "Int"], ["rush_att", "Rush"], ["rush_yds", "Rush Yds"], ["rush_td", "Rush TD"]],
+    RB: [["games", "G"], ["rush_att", "Att"], ["rush_yds", "Rush Yds"], ["rush_td", "Rush TD"], ["rec", "Rec"], ["rec_yds", "Rec Yds"], ["rec_td", "Rec TD"]],
+    WR: [["games", "G"], ["rec", "Rec"], ["rec_yds", "Rec Yds"], ["rec_td", "Rec TD"], ["rush_att", "Rush"], ["rush_yds", "Rush Yds"], ["rush_td", "Rush TD"]],
+    TE: [["games", "G"], ["rec", "Rec"], ["rec_yds", "Rec Yds"], ["rec_td", "Rec TD"]]
+  };
+  function tabCareer(p, body) {
+    var panel = el("section", "mx-cpanel");
+    panel.appendChild(el("h3", "mx-h", "College career stats"));
+    var rows = M.career[p.id] || [];
+    var wrap = el("div", "mx-tablewrap"), t = el("table", "mx-table");
+    var cols = [["season", "Season"], ["school", "School"]].concat(COLS[p.pos]);
+    var thead = el("thead"), hr = el("tr");
+    cols.forEach(function (c) { var th = el("th", null, c[1]); th.scope = "col"; hr.appendChild(th); });
+    thead.appendChild(hr); t.appendChild(thead);
+    var tb = el("tbody");
+    rows.forEach(function (r) {
+      var tr = el("tr", r.partial ? "partial" : "");
+      cols.forEach(function (c) {
+        var v = r[c[0]];
+        if (c[0] === "season") v = String(r.season) + (r.partial ? "*" : "");
+        tr.appendChild(el("td", v == null ? "na" : null, c[0] === "season" || c[0] === "school" ? v : fmt(v)));
+      });
+      tb.appendChild(tr);
+    });
+    if (!rows.length) { var tr0 = el("tr"), td0 = el("td", "na", "No verified stat lines yet"); td0.colSpan = cols.length; tr0.appendChild(td0); tb.appendChild(tr0); }
+    t.appendChild(tb); wrap.appendChild(t); panel.appendChild(wrap);
+    var part = rows.filter(function (r) { return r.partial; })[0];
+    if (part) panel.appendChild(el("div", "mx-gnote", "* 2026 season to date" + (part.through ? ", through " + day(part.through, true) : "") + ". Blank cells were not confirmed by a second source."));
+    body.appendChild(panel);
+  }
+
+  function tabNotes(p, body) {
+    var panel = el("section", "mx-cpanel");
+    var g = el("div", "mx-notes");
+    function block(title, text) { if (!text) return null; var d = el("div"); add(d, el("h3", "mx-h", title), el("p", null, text)); return d; }
+    var left = el("div"), right = el("div");
+    left.style.display = right.style.display = "grid"; left.style.gap = right.style.gap = "22px"; left.style.alignContent = right.style.alignContent = "start";
+    add(left, block("Breakdown", p.summary), block("Play style", p.play_style));
+    if (p.comps) { var cs = el("div"); cs.appendChild(el("h3", "mx-h", "Player comparisons")); var cc = el("div", "mx-comps"); p.comps.split(" · ").forEach(function (c) { cc.appendChild(el("span", null, c)); }); cs.appendChild(cc); left.appendChild(cs); }
+    add(left, block("Projected NFL usage", p.nfl_usage));
+    add(right, block("Draft projection", p.draft_projection), block("Declare outlook", p.declare_note));
+    var vr = el("div"); vr.appendChild(el("h3", "mx-h", "Verification"));
+    var vv = el("div", "mx-verify");
+    add(vv, el("span", p.bio_verified ? "ok" : "no", p.bio_verified ? "✓ Bio confirmed by 2 sources" : "! Bio from 1 source"),
+      el("span", p.stats_verified ? "ok" : "no", p.stats_verified ? "✓ Stats confirmed by 2 sources" : "! Some stats from 1 source"));
+    vr.appendChild(vv);
+    if (p.notes) { var n = el("p", "mx-small", p.notes); n.style.marginTop = "10px"; vr.appendChild(n); }
+    right.appendChild(vr);
+    if (p.sources) {
+      var so = el("div"); so.appendChild(el("h3", "mx-h", "Sources"));
+      var l = el("div", "mx-links");
+      p.sources.split(/\s+/).filter(Boolean).slice(0, 14).forEach(function (u) {
+        if (!/^https?:\/\//.test(u)) return;
+        var a = el("a", null, u.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]); a.href = u; a.target = "_blank"; a.rel = "noopener"; l.appendChild(a);
+      });
+      so.appendChild(l); right.appendChild(so);
+    }
+    add(g, left, right);
+    panel.appendChild(g);
+    body.appendChild(panel);
+  }
+
+  function renderCard(resetScroll) {
+    var p = state.open ? M.byId[state.open] : null;
+    if (!p) {
+      if (!card.hidden) {
+        card.hidden = true; card.textContent = "";
+        document.documentElement.classList.remove("mx-lock");
+        if (cardPushed) { cardPushed = false; if (history.state && history.state.mxCard) history.back(); }
+        if (lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
+      }
+      return;
+    }
+    var prevScroll = card.querySelector(".mx-cscroll");
+    var keep = !resetScroll && prevScroll && card.getAttribute("data-pid") === p.id ? prevScroll.scrollTop : 0;
+    card.textContent = "";
+    setTint(card, p);
+    card.setAttribute("data-pid", p.id);
+    card.setAttribute("aria-label", p.name + " player screen");
+    var wm = el("div", "wm"); wm.appendChild(seal(p, { big: true })); card.appendChild(wm);
+    var sc = el("div", "mx-cscroll"), inn = el("div", "mx-cin");
+    // header
+    var head = el("div", "mx-chead");
+    var port = el("div", "mx-cport"); port.appendChild(portrait(p));
+    var fl = firstLast(p.name);
+    var nm = el("div", "mx-cname");
+    var schl = el("div", "sch");
+    add(schl, crest(p), el("span", null, p.school + (p.class ? " · " + p.class : "")));
+    var tg = tags(p); if (tg) schl.appendChild(tg);
+    var hn = el("h2"); hn.style.margin = "0";
+    add(hn, el("div", "first", fl[0]), el("div", "last", fl[1]));
+    add(nm, el("div", "pos", p.pos + " · " + p.pos + p.rank + " on our board"), hn, schl);
+    var keys = el("div", "mx-ckeys");
+    var mv = p.prev_rank == null ? "NEW" : p.prev_rank - p.rank;
+    add(keys,
+      key(projShort(p.draft_projection), "Projection"),
+      key(p.tier != null ? "Tier " + p.tier : "—", "Talent"),
+      key(((p.bio_verified ? 1 : 0) + (p.stats_verified ? 1 : 0)) * 50 + "%", "Verified"),
+      key(mv === "NEW" ? "NEW" : mv === 0 ? "0" : (mv > 0 ? "▲" : "▼") + Math.abs(mv), "Rank change (week)", mv === "NEW" ? "" : mv > 0 ? "up" : mv < 0 ? "down" : ""));
+    add(head, port, nm, keys);
+    inn.appendChild(head);
+    inn.appendChild(el("div", "mx-bluebar"));
+    // tabs
+    var tabs = el("div", "mx-ctabs"); tabs.setAttribute("role", "tablist");
+    var kl = el("button", "mx-key", "Q"); kl.type = "button"; kl.setAttribute("aria-label", "Previous section"); kl.addEventListener("click", function () { stepTab(-1); });
+    tabs.appendChild(kl);
+    CTABS.forEach(function (t) {
+      var b = el("button", "mx-ctab", t[1]); b.type = "button"; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(state.cardTab === t[0]));
+      b.addEventListener("click", function () { setCardTab(t[0]); });
+      tabs.appendChild(b);
+    });
+    var kr = el("button", "mx-key", "E"); kr.type = "button"; kr.setAttribute("aria-label", "Next section"); kr.addEventListener("click", function () { stepTab(1); });
+    tabs.appendChild(kr);
+    inn.appendChild(tabs);
+    var body = el("div");
+    ({ report: tabReport, grades: tabGrades, prod: tabProd, career: tabCareer, notes: tabNotes })[state.cardTab](p, body);
+    inn.appendChild(body);
+    sc.appendChild(inn);
+    card.appendChild(sc);
+    // bottom hint bar
+    var foot = el("div", "mx-cfoot");
+    function hint(cls, glyph, label, fn, aria) {
+      var b = el("button", "mx-hint " + cls); b.type = "button";
+      var g = el("span", "gl", glyph); g.setAttribute("aria-hidden", "true");
+      add(b, g, el("span", "tx", label));
+      if (aria) b.setAttribute("aria-label", aria);
+      b.addEventListener("click", fn);
+      return b;
+    }
+    var ids = state.navIds, i = ids.indexOf(p.id);
+    var on = isFav(p.id);
+    var bBack = hint("back", "✕", "Back", closeCard, "Close player screen");
+    var bFav = hint("fav" + (on ? " on" : ""), on ? "★" : "☆", on ? "Saved" : "Favorite", function () { toggleFav(p.id); }, (on ? "Remove " : "Add ") + p.name + (on ? " from" : " to") + " favorites");
+    var bPrev = hint("", "◀", "Prev", function () { stepCard(-1); }, "Previous player");
+    var bNext = hint("", "▶", "Next", function () { stepCard(1); }, "Next player");
+    bPrev.disabled = i <= 0; bNext.disabled = i < 0 || i >= ids.length - 1;
+    add(foot, bBack, bFav, el("span", "sp", i >= 0 ? (i + 1) + " / " + ids.length : ""), bPrev, bNext);
+    card.appendChild(foot);
+    if (card.hidden) {
+      lastFocus = document.activeElement;
+      card.hidden = false;
+      document.documentElement.classList.add("mx-lock");
+      if (!cardPushed) { try { history.pushState({ mxCard: true }, ""); cardPushed = true; } catch (e) {} }
+      bBack.focus({ preventScroll: true });
+    }
+    sc.scrollTop = keep;
+  }
+  var lastFocus = null;
+  window.addEventListener("popstate", function () { if (cardPushed) { cardPushed = false; state.open = null; render(); } });
+  document.addEventListener("keydown", function (e) {
+    if (card.hidden) return;
+    if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.key === "Escape") { e.preventDefault(); closeCard(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); stepCard(1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); stepCard(-1); }
+    else if (e.key === "q" || e.key === "Q") stepTab(-1);
+    else if (e.key === "e" || e.key === "E") stepTab(1);
+  });
+  // swipe between players on touch screens
+  var tx = null, ty = null;
+  card.addEventListener("touchstart", function (e) {
+    var t = e.target;
+    while (t && t !== card) { if (t.classList && (t.classList.contains("mx-tablewrap") || t.classList.contains("mx-ctabs"))) { tx = null; return; } t = t.parentNode; }
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+  }, { passive: true });
+  card.addEventListener("touchend", function (e) {
+    if (tx == null) return;
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; tx = null;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) stepCard(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  // ---------- chrome: tabs, chips, bottom nav ----------
+  var tabsEl = document.getElementById("mx-tabs"), chipsEl = document.getElementById("mx-chips"), bnav = document.getElementById("mx-bnav");
+  function setView(v) {
+    if (state.view !== v) { state.view = v; state.open = null; dash.setParams({ view: v }); render(); }
     window.scrollTo(0, 0);
   }
-
-  // board chips (Top 35 / QB / RB / WR / TE) live in the sticky bar on phones
-  var chips = el("div", "rb-chips");
-  chips.id = "rb-chips";
-  chips.setAttribute("role", "tablist");
-  chips.setAttribute("aria-label", "Board");
-  BOARD.forEach(function (p) {
-    var b = el("button", "rb-chip", p === "TOP" ? "Top 35" : p);
-    b.type = "button"; b.id = "chip-" + p; b.setAttribute("role", "tab");
-    b.addEventListener("click", function () { setView(p); });
-    chips.appendChild(b);
+  VIEWS.forEach(function (v) {
+    var b = el("button", "mx-tab"); b.type = "button"; b.id = "tab-" + v; b.setAttribute("role", "tab");
+    add(b, el("span", null, TABN[v]), el("span", "n", ""));
+    b.addEventListener("click", function () { setView(v); });
+    tabsEl.appendChild(b);
   });
-  var controls = tabs.parentNode;
-  controls.parentNode.insertBefore(chips, controls);
-
+  document.getElementById("mx-prevtab").addEventListener("click", function () { setView(VIEWS[(VIEWS.indexOf(state.view) + VIEWS.length - 1) % VIEWS.length]); });
+  document.getElementById("mx-nexttab").addEventListener("click", function () { setView(VIEWS[(VIEWS.indexOf(state.view) + 1) % VIEWS.length]); });
+  BOARD.forEach(function (v) {
+    var b = el("button", "mx-chip", v === "TOP" ? "Top 35" : v); b.type = "button"; b.id = "chip-" + v; b.setAttribute("role", "tab");
+    b.addEventListener("click", function () { setView(v); });
+    chipsEl.appendChild(b);
+  });
+  var lastBoard = BOARD.indexOf(state.view) >= 0 ? state.view : "TOP";
   var NAV = [
     ["BOARD", "Board", "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"],
     ["MYD", "My draft", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"],
@@ -1227,117 +1144,77 @@
     ["INJ", "Injuries", "M12 8v8M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"],
     ["WEEK", "This week", "M3 17l6-6 4 4 8-8M15 7h6v6"]
   ];
-  var nav = el("nav", "rb-nav");
-  nav.id = "rb-nav";
-  nav.setAttribute("aria-label", "Sections");
   NAV.forEach(function (n) {
-    var b = el("button", "rb-navbtn");
-    b.type = "button"; b.id = "nav-" + n[0];
-    b.appendChild(icon(n[2]));
-    b.appendChild(el("span", "lb", n[1]));
+    var b = el("button", "mx-nb"); b.type = "button"; b.id = "nav-" + n[0];
+    add(b, icon(n[2]), el("span", null, n[1]));
     if (n[0] === "FAV" || n[0] === "INJ") b.appendChild(el("span", "bdg" + (n[0] === "INJ" ? " red" : ""), ""));
     b.addEventListener("click", function () { setView(n[0] === "BOARD" ? lastBoard : n[0]); });
-    nav.appendChild(b);
+    bnav.appendChild(b);
   });
-  root.appendChild(nav);
 
-  // full-screen player card
-  var sheet = el("div", "rb-sheet");
-  sheet.id = "rb-sheet"; sheet.hidden = true;
-  sheet.setAttribute("role", "dialog"); sheet.setAttribute("aria-modal", "true");
-  var bar = el("div", "rb-sheetbar");
-  var bClose = el("button", "rb-sbtn close", "✕ Close"); bClose.type = "button";
-  var bStar = el("button", "rb-sbtn star", "☆"); bStar.type = "button";
-  var sPos = el("span", "rb-spos", "");
-  var bPrev = el("button", "rb-sbtn", "‹ Prev"); bPrev.type = "button";
-  var bNext = el("button", "rb-sbtn", "Next ›"); bNext.type = "button";
-  [bClose, bStar, sPos, bPrev, bNext].forEach(function (x) { bar.appendChild(x); });
-  var sBody = el("div", "rb-sheetbody");
-  sheet.appendChild(bar); sheet.appendChild(sBody);
-  root.appendChild(sheet);
-  var sheetPushed = false;
-  function stepPlayer(d) {
-    var ids = state.navIds || [], i = ids.indexOf(state.open);
-    if (i < 0 || !ids[i + d]) return;
-    state.open = ids[i + d]; state.focus = state.open; render();
-  }
-  bClose.addEventListener("click", function () { state.open = null; render(); });
-  bPrev.addEventListener("click", function () { stepPlayer(-1); });
-  bNext.addEventListener("click", function () { stepPlayer(1); });
-  bStar.addEventListener("click", function () { if (state.open) toggleFav(state.open); });
-  window.addEventListener("popstate", function () {
-    if (sheetPushed) { sheetPushed = false; state.open = null; render(); }
-  });
-  // swipe left / right on the card to move through the list
-  var tx = null, ty = null;
-  sheet.addEventListener("touchstart", function (e) {
-    var t = e.target;
-    while (t && t !== sheet) { if (t.classList && t.classList.contains("rb-tablewrap")) { tx = null; return; } t = t.parentNode; }
-    tx = e.touches[0].clientX; ty = e.touches[0].clientY;
-  }, { passive: true });
-  sheet.addEventListener("touchend", function (e) {
-    if (tx == null) return;
-    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
-    tx = null;
-    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) stepPlayer(dx < 0 ? 1 : -1);
-  }, { passive: true });
-
-  function closeSheet() {
-    if (sheet.hidden) return;
-    sheet.hidden = true;
-    sheet.removeAttribute("data-pid");
-    document.documentElement.classList.remove("rb-sheet-open");
-    if (sheetPushed) { sheetPushed = false; if (history.state && history.state.rbSheet) history.back(); }
-  }
-  function syncSheet() {
-    var pd = dash.data("players"), cr = dash.data("career");
-    var p = isMobile() && state.open && pd.status === "ok" ? pd.data.filter(function (x) { return x.id === state.open; })[0] : null;
-    if (!p) { closeSheet(); return; }
-    var cRows = (cr.status === "ok" ? cr.data : []).filter(function (r) { return r.player_id === p.id; })
-      .sort(function (a, b) { return a.season - b.season; });
-    sBody.textContent = "";
-    sBody.appendChild(detail(p, cRows));
-    var ids = state.navIds || [], i = ids.indexOf(p.id);
-    sPos.textContent = i >= 0 ? (i + 1) + " / " + ids.length : p.pos + p.rank;
-    bPrev.hidden = bNext.hidden = i < 0;
-    bPrev.disabled = i <= 0; bNext.disabled = i < 0 || i >= ids.length - 1;
-    bStar.textContent = isFav(p.id) ? "★" : "☆";
-    bStar.classList.toggle("on", isFav(p.id));
-    bStar.setAttribute("aria-label", (isFav(p.id) ? "Remove " : "Add ") + p.name + (isFav(p.id) ? " from" : " to") + " favorites");
-    if (sheet.getAttribute("data-pid") !== p.id) sBody.scrollTop = 0;
-    sheet.setAttribute("data-pid", p.id);
-    sheet.setAttribute("aria-label", p.name + " scouting card");
-    sheet.hidden = false;
-    document.documentElement.classList.add("rb-sheet-open");
-    if (!sheetPushed) { try { history.pushState({ rbSheet: true }, ""); sheetPushed = true; } catch (e) {} }
-  }
-  function syncNav() {
-    var onBoard = BOARD.indexOf(state.pos) >= 0;
-    if (onBoard) lastBoard = state.pos;
+  function syncChrome() {
+    var v = state.view;
+    if (BOARD.indexOf(v) >= 0) lastBoard = v;
+    root.setAttribute("data-view", v);
+    document.getElementById("mx-pagetitle").textContent = TITLE[v];
+    VIEWS.forEach(function (x) {
+      var b = document.getElementById("tab-" + x);
+      b.setAttribute("aria-selected", String(x === v));
+      var n = "";
+      if (POS.indexOf(x) >= 0) n = M.players.filter(function (p) { return p.pos === x; }).length;
+      if (x === "FAV") n = favCount() || "";
+      if (x === "INJ") n = injCount() || "";
+      b.querySelector(".n").textContent = n;
+    });
+    var sel = document.getElementById("tab-" + v);
+    if (sel && sel.scrollIntoView && !mq.matches) { var t = tabsEl; var l = sel.offsetLeft, r = l + sel.offsetWidth; if (l < t.scrollLeft || r > t.scrollLeft + t.clientWidth) t.scrollLeft = l - 40; }
+    BOARD.forEach(function (x) { document.getElementById("chip-" + x).setAttribute("aria-selected", String(x === v)); });
     NAV.forEach(function (n) {
-      var on = n[0] === "BOARD" ? onBoard : state.pos === n[0];
+      var on = n[0] === "BOARD" ? BOARD.indexOf(v) >= 0 : v === n[0];
       var b = document.getElementById("nav-" + n[0]);
       if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
-    BOARD.forEach(function (p) { document.getElementById("chip-" + p).setAttribute("aria-selected", String(p === state.pos)); });
-    var pr = dash.data("players");
-    var nf = pr.status === "ok" ? favCount(pr.data) : 0;
-    var bd = document.querySelector("#nav-FAV .bdg");
-    bd.textContent = nf ? String(nf) : ""; bd.hidden = !nf;
-    var ni = injCount(), bi = document.querySelector("#nav-INJ .bdg");
-    bi.textContent = ni ? String(ni) : ""; bi.hidden = !ni;
+    var bf = document.querySelector("#nav-FAV .bdg"), nf = favCount(); bf.textContent = nf ? String(nf) : ""; bf.hidden = !nf;
+    var bi = document.querySelector("#nav-INJ .bdg"), ni = injCount(); bi.textContent = ni ? String(ni) : ""; bi.hidden = !ni;
+  }
+
+  function renderSide() {
+    var side = document.getElementById("mx-side"), bodyEl = side.parentNode;
+    side.textContent = "";
+    var L = league();
+    var show = !!L && ["MYD", "MOCK", "TOP", "QB", "RB", "WR", "TE", "FAV"].indexOf(state.view) >= 0;
+    bodyEl.classList.toggle("noside", !show);
+    bodyEl.classList.toggle("side-first", state.view === "MYD");
+    if (show) side.appendChild(needsPanel(L, state.view === "MYD"));
+  }
+  function renderMainOnly() {
+    var main = document.getElementById("mx-main");
+    var focusQ = document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("mx-input");
+    var pos = focusQ ? document.activeElement.selectionStart : null;
+    main.textContent = "";
+    var v = state.view;
+    if (v === "MYD") myDraftView(main);
+    else if (v === "MOCK") mockView(main);
+    else if (v === "INJ") injView(main);
+    else if (v === "WEEK") weekView(main);
+    else boardView(main);
+    if (focusQ) { var q = main.querySelector(".mx-input"); if (q) { q.focus({ preventScroll: true }); try { q.setSelectionRange(pos, pos); } catch (e) {} } }
+    if (window.rbMeasure) window.rbMeasure();
   }
 
   function render() {
-    state.navIds = [];
-    renderInner();
-    root.setAttribute("data-view", state.pos);
-    if (state.pos !== savedView) { savedView = state.pos; dash.setParams({ view: state.pos }); }
-    syncNav();
-    syncSheet();
-    if (window.rbMeasure) window.rbMeasure();
+    if (!M || M === "loading") {
+      var b = build();
+      if (b === "loading") { document.getElementById("mx-main").textContent = ""; document.getElementById("mx-main").appendChild(el("div", "mx-empty", "Loading the board…")); return; }
+      if (b === "error") { document.getElementById("mx-main").textContent = ""; document.getElementById("mx-main").appendChild(el("div", "mx-empty", "The board's data didn't load. Refresh to try again.")); return; }
+      M = b;
+    }
+    coachBox();
+    syncChrome();
+    renderSide();
+    renderMainOnly();
+    renderCard(false);
   }
-  if (mq.addEventListener) mq.addEventListener("change", function () { render(); });
-
+  if (mq.addEventListener) mq.addEventListener("change", function () { if (M) render(); });
   dash.onData(render);
 })();

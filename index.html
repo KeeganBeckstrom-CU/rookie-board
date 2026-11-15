@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#17191d">
+<meta name="theme-color" content="#0a1426">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="2027 Rookie Board: college QB, RB, WR and TE prospects for dynasty superflex PPR leagues.">
 <title>2027 Rookie Board</title>
@@ -11,6 +11,8 @@
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/barlow-800.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/barlow-condensed-700i.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Rookie Board">
@@ -27,72 +29,42 @@
 </head>
 <body>
 <div id="dash-root">
-<div class="rb" id="rookie-board">
-  <header class="rb-head" id="board-header">
-    <div class="rb-brand">
-      <img class="rb-logo" src="icons/icon-192.png" width="76" height="76" alt="">
+<div class="mx" id="rookie-board">
+  <header class="mx-top">
+    <div class="mx-brand">
+      <img class="mx-logo" src="icons/icon-192.png" width="48" height="48" alt="">
       <div>
-        <div class="rb-eyebrow">Scouting department · Superflex PPR</div>
-        <h1 class="rb-title"><span class="yr">2027</span> Rookie Board</h1>
-        <div class="rb-sub">College QB, RB, WR and TE prospects for the 2027 NFL Draft. Click a row for the full scouting card; tap ☆ to save a favorite.</div>
+        <div class="mx-eyebrow">Scouting department · Superflex PPR</div>
+        <div class="mx-apptitle"><span class="yr">2027</span> Rookie Board</div>
       </div>
     </div>
-    <div class="rb-sub" id="board-updated" data-source="players">Loading…</div>
+    <div class="mx-coach" id="mx-coach"></div>
   </header>
-  <div class="rb-chrome-rule" aria-hidden="true"><span>G</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>G</span></div>
 
-  <div class="rb-focus" id="rb-focus" aria-live="polite"></div>
-  <div class="rb-controls">
-    <div class="rb-tabs" role="tablist" aria-label="Position" id="pos-tabs"></div>
-    <div class="rb-filters" id="rb-filters">
-      <input class="rb-input" id="rb-search" type="search" placeholder="Search player or school" aria-label="Search player or school">
-      <select class="rb-select" id="rb-favsort" aria-label="Sort favorites" hidden>
-        <option value="overall">Sort: Top 35 rank</option>
-        <option value="mock">Sort: Mock draft pick</option>
-        <option value="pos">Sort: Position, then rank</option>
-        <option value="prod">Sort: 2026 yards</option>
-        <option value="name">Sort: Name</option>
-      </select>
-      <select class="rb-select" id="rb-tag" aria-label="Market tag">
-        <option value="">All market tags</option>
-        <option value="Value">Value only</option>
-        <option value="Pricey">Pricey only</option>
-      </select>
-      <select class="rb-select" id="rb-declare" aria-label="Likely to declare">
-        <option value="">All declare odds</option>
-        <option value="High">High to declare</option>
-        <option value="Medium">Medium</option>
-        <option value="Low">Low</option>
-      </select>
-    </div>
+  <div class="mx-tabbar">
+    <button class="mx-shoulder" id="mx-prevtab" type="button" aria-label="Previous tab">◀</button>
+    <nav class="mx-tabs" id="mx-tabs" role="tablist" aria-label="Sections"></nav>
+    <button class="mx-shoulder" id="mx-nexttab" type="button" aria-label="Next tab">▶</button>
   </div>
 
-  <div class="rb-crestpick" id="rb-crestpick" hidden></div>
-  <div class="rb-cols" aria-hidden="true" id="rb-cols">
-    <div></div><div>Rnk</div><div>Player</div><div class="ctr">Pos</div><div>School</div><div class="ctr c-cl">Cl</div>
-    <div class="num c-age">Age</div><div class="num c-ht">Ht</div><div class="num c-wt">Wt</div>
-    <div class="num" id="col-26">2026</div><div class="ctr">Declare</div><div class="c-proj">Projection</div>
-  </div>
-  <div class="rb-list" id="rb-list" role="list"></div>
-  <div class="rb-week" id="rb-week" hidden></div>
-  <div class="rb-mock" id="rb-mock" hidden></div>
-  <div class="rb-week" id="rb-inj" hidden></div>
-  <div class="rb-mydraft" id="rb-mydraft" hidden></div>
+  <div class="mx-chips" id="mx-chips" role="tablist" aria-label="Board"></div>
 
-  <div class="rb-legend" aria-hidden="true">
-    <span class="key"><span class="dot" style="background:#3b8f4f"></span>Click: scouting card</span>
-    <span class="key"><span class="dot" style="background:#e6e9ee"></span>☆ Favorite a player</span>
-    <span class="key"><span class="dot" style="background:#2f7a47"></span>Value: market drafts him later than our board</span>
-    <span class="key"><span class="dot" style="background:#8e2c25"></span>Pricey: market drafts him earlier</span>
-    <span class="key"><span class="dot" style="background:#c0392b"></span>Tabs: position boards</span>
-    <span class="key"><span class="dot" style="background:#2f6fc0"></span>Mock draft</span>
-    <span class="key"><span class="dot" style="background:#b3261e"></span>OUT / OUT-YR / Q: injury status</span>
-    <span class="key"><span class="dot" style="background:#d4a017"></span>This week: board changes</span>
+  <div class="mx-heading">
+    <h1 class="mx-pagetitle" id="mx-pagetitle">Top 35</h1>
+    <div class="mx-asof" id="data-asof"></div>
   </div>
-  <div class="rb-foot" id="board-foot">
-    Age is age on draft day (April 22, 2027), shown only where a birth date was found. Each card marks whether its bio and stats were confirmed by two independent sources. School crests are original shields in each school's colors, not official logos. Stats come from ESPN, school athletics sites and CFB stat trackers; College Football Reference blocks automated access. Position ranks blend recent big boards (ESPN, PFF, Yahoo, Bleacher Report, The Athletic, Draft Countdown, NFL Draft Buzz) and dynasty rookie rankings, and refresh weekly. The Top 35 blends the superflex market consensus (60%) with our board (40%) and is grouped into tiers; Value/Pricey tags compare our scouting board with the superflex market (6+ spots apart); use the tag filter to list them. My draft uses each of your three Sleeper leagues' own formats, records and picks. ▲/▼ show the move since last week's board. Injury tags (OUT, OUT-YR = out for the year, Q = questionable) come from the newest injury note in the weekly updates and show the date of that note; the Injuries tab lists them all. Favorites are saved in this browser.
-    <span id="data-asof"></span>
+
+  <div class="mx-body">
+    <aside class="mx-side" id="mx-side" aria-label="Team needs"></aside>
+    <main class="mx-main" id="mx-main"></main>
   </div>
+
+  <footer class="mx-foot" id="mx-foot">
+    Age is age on draft day (April 22, 2027), shown only where a birth date was found. Player art is a generic silhouette in each school's colors, and school crests are original seals, not official logos. Stats come from ESPN, school athletics sites and college stat trackers. Position ranks blend recent big boards and dynasty rookie rankings and refresh weekly; the Top 35 blends the superflex market consensus (60%) with our board (40%) and is grouped into tiers. Letter grades and the 0–10 production score compare each player with the other prospects at his position on this board, using 2026 stats and the market data on his card; they are not scouting grades. Value/Pricey tags compare our board with the superflex market (6+ spots apart). Injury tags come from the newest injury note in the weekly updates and show its date. Team needs are a youth count only (age, not talent). Favorites are saved in this browser.
+  </footer>
+
+  <div class="mx-card" id="mx-card" hidden role="dialog" aria-modal="true"></div>
+  <nav class="mx-bnav" id="mx-bnav" aria-label="Sections"></nav>
 </div>
 </div>
 <script src="runtime.js"></script>
