@@ -1,13 +1,13 @@
 (function () {
   var P0 = dash.params() || {};
-  var VIEWS0 = ["MYD", "TOP", "QB", "RB", "WR", "TE", "FAV", "MOCK", "WEEK"];
+  var VIEWS0 = ["MYD", "TOP", "QB", "RB", "WR", "TE", "FAV", "MOCK", "INJ", "WEEK"];
   var state = { pos: VIEWS0.indexOf(P0.view) >= 0 ? P0.view : "TOP", q: "", declare: "", open: null, week: null, focus: null,
     crest: "seal", favSort: P0.favSort || "overall",
     league: P0.league || null,
     favs: new Set(Array.isArray(P0.favs) ? P0.favs : []), unfavs: new Set(Array.isArray(P0.unfavs) ? P0.unfavs : []) };
   var POS = ["QB", "RB", "WR", "TE"];
-  var VIEWS = ["MYD", "TOP", "QB", "RB", "WR", "TE", "FAV", "MOCK", "WEEK"];
-  var TABNAME = { MYD: "My draft", TOP: "Top 35", FAV: "★ Favorites", MOCK: "Mock draft", WEEK: "This week" };
+  var VIEWS = ["MYD", "TOP", "QB", "RB", "WR", "TE", "FAV", "MOCK", "INJ", "WEEK"];
+  var TABNAME = { MYD: "My draft", TOP: "Top 35", FAV: "★ Favorites", MOCK: "Mock draft", INJ: "Injuries", WEEK: "This week" };
   var LABEL = { TOP: "Overall top 35 · superflex PPR", FAV: "Favorites", QB: "Quarterbacks", RB: "Running backs", WR: "Wide receivers", TE: "Tight ends" };
   var COLS = {
     QB: [["games","G"],["cmp","Cmp"],["att","Att"],["pass_yds","Pass Yds"],["pass_td","Pass TD"],["int","Int"],["rush_att","Rush"],["rush_yds","Rush Yds"],["rush_td","Rush TD"]],
@@ -16,6 +16,51 @@
     TE: [["games","G"],["rec","Rec"],["rec_yds","Rec Yds"],["rec_td","Rec TD"]]
   };
   var HEAD26 = { TOP: "yds / TD", FAV: "yds / TD", QB: "Pass yds / TD", RB: "Rush yds / TD", WR: "Rec yds / TD", TE: "Rec yds / TD" };
+
+  // Injury status, read from the board's weekly notes: the newest injury note for each prospect on the board.
+  dash.calc("injuries", {
+    title: "Injury status",
+    description: "Newest injury note per prospect from the weekly board changes (injury notes, plus fallers whose note names an injury). Status comes from the note's wording: out for the season, out, expected back, or back.",
+    inputs: ["changes", "players"],
+    fn: function (changes, players) {
+      var BODY = /torn|broken|fibula|\bACL\b|\bMCL\b|surgery|concussion|season-ending|out for the (season|year)|shoulder|knee|ankle|hamstring|\bfoot\b/i;
+      var SEASON = /out for the (season|year)|season-ending|done for the season|ends his (year|season)|torn (acl|mcl)|broken/i;
+      var SOON = /expected back|may return|could return|day[- ]to[- ]day|questionable/i;
+      var BACK = /^(back\b|season debut|returning|returned)|back on the field|back early|back from/i;
+      var best = {};
+      changes.forEach(function (c) {
+        if (!c.player_id) return;
+        var text = c.headline + " " + c.detail;
+        if (!(c.type === "injury" || (c.type === "faller" && BODY.test(text)))) return;
+        var b = best[c.player_id];
+        if (!b || c.week > b.week || (c.week === b.week && c.type === "injury" && b.type !== "injury")) best[c.player_id] = c;
+      });
+      var ORDER = { season: 0, out: 1, soon: 2, back: 3 };
+      return players.filter(function (p) { return best[p.id]; }).map(function (p) {
+        var c = best[p.id], text = c.headline + " " + c.detail;
+        var code = SEASON.test(text) ? "season" : BACK.test(c.headline) ? "back" : SOON.test(text) ? "soon" : "out";
+        return { id: p.id, name: p.name, pos: p.pos, rank: p.rank, overall_rank: p.overall_rank, code: code,
+          status: { season: "Out for season", out: "Out", soon: "Questionable", back: "Back" }[code],
+          tag: { season: "OUT-YR", out: "OUT", soon: "Q", back: "" }[code],
+          headline: c.type === "injury" || BODY.test(c.headline) ? c.headline : "", detail: c.detail, week: c.week };
+      }).sort(function (a, b) { return ORDER[a.code] - ORDER[b.code] || (a.overall_rank || 999) - (b.overall_rank || 999) || a.rank - b.rank; });
+    }
+  });
+  function injOf(id) {
+    var d = dash.data("injuries");
+    if (d.status !== "ok" || !d.data) return null;
+    return d.data.filter(function (x) { return x.id === id; })[0] || null;
+  }
+  function injDate(w) { return d3.utcFormat("%b %-d")(new Date(w + "T12:00:00Z")); }
+  // small tag for lists; nothing for players who are back
+  function injTag(id) {
+    var j = injOf(id);
+    if (!j || !j.tag) return null;
+    var t = el("span", "rb-inj " + j.code, j.tag);
+    t.title = j.status + " (as of " + injDate(j.week) + "): " + (j.headline || j.detail);
+    t.setAttribute("aria-label", j.status);
+    return t;
+  }
 
   dash.calc("rank_moves", {
     title: "Rank change since last week",
@@ -268,6 +313,17 @@
       s.appendChild(el("h4", null, title));
       s.appendChild(mark(el("p", null, text || "—"), field, p.id));
       return s;
+    }
+    var pj = injOf(p.id);
+    if (pj) {
+      var ib = el("div", "rb-injbox " + pj.code);
+      ib.appendChild(el("h4", null, "Injury status · as of " + injDate(pj.week)));
+      var il = el("div", "rb-injline");
+      il.appendChild(el("span", "rb-injpill " + pj.code, pj.status));
+      if (pj.headline) il.appendChild(el("span", "hl", pj.headline));
+      ib.appendChild(il);
+      ib.appendChild(el("p", null, pj.detail));
+      left.appendChild(ib);
     }
     if (p.overall_rank != null && p.overall_note) {
       var ob = el("div");
@@ -562,6 +618,8 @@
         pc.appendChild(mmark(el("span", null, String(r.pos_rank)), "pos_rank", r.pick));
         meta.appendChild(pc);
         meta.appendChild(mmark(el("span", null, r.school), "school", r.pick));
+        var it1 = injTag(r.player_id);
+        if (it1) meta.appendChild(it1);
         info.appendChild(meta);
         c.appendChild(info);
         if (r.sf_avg != null) {
@@ -614,6 +672,10 @@
     else { state.unfavs.delete(id); if (!saved) state.favs.add(id); }
     dash.setParams({ favs: Array.from(state.favs), unfavs: Array.from(state.unfavs) });
     render();
+  }
+  function injCount() {
+    var d = dash.data("injuries");
+    return d.status === "ok" && d.data ? d.data.filter(function (r) { return r.code !== "back"; }).length : 0;
   }
   function favCount(players) { return players.filter(function (r) { return isFav(r.id); }).length; }
   function mockPickOf(id) {
@@ -858,6 +920,11 @@
         var s = el("span", "rp" + (x.slot !== "active" ? " dim" : ""));
         s.appendChild(cm(el("span", null, x.name), "my_roster", "name", x.row_id, "row_id"));
         if (x.age != null) { s.appendChild(document.createTextNode(" ")); s.appendChild(cm(el("span", "rb-muted", String(x.age)), "my_roster", "age", x.row_id, "row_id")); }
+        if (x.injury) {
+          var rj = el("span", "rb-inj " + (x.injury === "Questionable" ? "soon" : x.injury === "IR" ? "season" : "out"), x.injury === "Questionable" ? "Q" : x.injury.toUpperCase());
+          rj.title = x.injury; rj.setAttribute("aria-label", x.injury);
+          s.appendChild(document.createTextNode(" ")); s.appendChild(rj);
+        }
         nl.appendChild(s);
       });
       row.appendChild(nl);
@@ -892,6 +959,8 @@
         if (pl) it.appendChild(badge(pl, false));
         var nm = el("span", "tn");
         nm.appendChild(cm(el("span", null, t.name), "targets", "name", t.key));
+        var it2 = injTag(t.player_id);
+        if (it2) { nm.appendChild(document.createTextNode(" ")); nm.appendChild(it2); }
         it.appendChild(nm);
         var ps = el("span", "rb-pos"); ps.style.setProperty("--pc", "var(--pos-" + t.pos + ")");
         ps.appendChild(cm(el("span", null, t.pos), "targets", "pos", t.key));
@@ -911,6 +980,61 @@
     box.appendChild(pg);
   }
 
+  var INJGROUPS = [
+    ["season", "Out for the season", "faller"], ["out", "Out", "faller"],
+    ["soon", "Questionable or expected back", "injury"], ["back", "Back on the field", "riser"]
+  ];
+  function renderInj() {
+    var box = document.getElementById("rb-inj");
+    box.textContent = "";
+    var d = dash.data("injuries"), cd = dash.data("changes"), pd = dash.data("players");
+    var top = el("div");
+    var t = el("h2", "rb-week-title", "Injury report");
+    t.id = "inj-title";
+    top.appendChild(t);
+    box.appendChild(top);
+    if (d.status !== "ok" || !d.data) {
+      box.appendChild(el("div", "rb-empty", d.status === "loading" ? "Loading injuries…" : "Injury notes didn’t load."));
+      return;
+    }
+    var last = cd.status === "ok" ? cd.data.map(function (r) { return r.type === "injury" ? r.week : ""; }).sort().pop() : "";
+    top.appendChild(el("p", "rb-mock-intro", "Every prospect on the board with an injury note, newest note per player, from the weekly board updates" +
+      (last ? " (latest injury notes: " + injDate(last) + ")" : "") + ". Each line shows the date it was written, so check for newer news before you draft. Tap a player for his card."));
+    if (!d.data.length) { box.appendChild(el("div", "rb-empty", "No injuries noted.")); return; }
+    var grid = el("div", "rb-groups");
+    INJGROUPS.forEach(function (g) {
+      var items = d.data.filter(function (r) { return r.code === g[0]; });
+      if (!items.length) return;
+      var card = el("div", "rb-group " + g[2]);
+      card.id = "inj-" + g[0];
+      card.appendChild(el("h4", null, g[1] + " · " + items.length));
+      items.forEach(function (r) {
+        var pl = pd.status === "ok" ? pd.data.filter(function (x) { return x.id === r.id; })[0] : null;
+        var it = el("div", "rb-item rb-injitem");
+        it.setAttribute("role", "button"); it.tabIndex = 0;
+        var who = el("div", "who");
+        if (pl) who.appendChild(badge(pl, false));
+        var wn = el("span", null, r.name);
+        who.appendChild(wn);
+        var pc = el("span", "rb-pos", r.pos + r.rank); pc.style.setProperty("--pc", "var(--pos-" + r.pos + ")");
+        who.appendChild(pc);
+        if (pl) { var sc = el("span", "rb-muted sch", pl.school); who.appendChild(sc); }
+        it.appendChild(who);
+        var rk = el("div", "ranks");
+        rk.appendChild(el("span", "rb-injpill " + r.code, r.status));
+        it.appendChild(rk);
+        if (r.headline) it.appendChild(el("div", "hl", r.headline));
+        it.appendChild(el("div", "dt", r.detail + " (" + injDate(r.week) + ")"));
+        var go = function () { openPlayer(r.id); };
+        it.addEventListener("click", go);
+        it.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+        card.appendChild(it);
+      });
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+  }
+
   function renderInner() {
     var pr = dash.data("players"), cr = dash.data("career");
     var list = document.getElementById("rb-list");
@@ -922,9 +1046,11 @@
       var n = "";
       if (pr.status === "ok" && POS.indexOf(p) >= 0) n = pr.data.filter(function (r) { return r.pos === p; }).length;
       if (pr.status === "ok" && p === "FAV") n = favCount(pr.data);
+      if (p === "INJ") n = injCount() || "";
       b.querySelector(".n").textContent = n;
     });
-    var isWeek = state.pos === "WEEK", isMock = state.pos === "MOCK", isMy = state.pos === "MYD", other = isWeek || isMock || isMy;
+    var isWeek = state.pos === "WEEK", isMock = state.pos === "MOCK", isMy = state.pos === "MYD", isInj = state.pos === "INJ", other = isWeek || isMock || isMy || isInj;
+    document.getElementById("rb-inj").hidden = !isInj;
     document.getElementById("rb-mydraft").hidden = !isMy;
     document.getElementById("rb-week").hidden = !isWeek;
     document.getElementById("rb-mock").hidden = !isMock;
@@ -934,6 +1060,7 @@
     document.getElementById("rb-declare").hidden = state.pos === "FAV";
     document.getElementById("rb-cols").style.display = other ? "none" : "";
     document.getElementById("rb-filters").style.visibility = other ? "hidden" : "";
+    if (isInj) { upd.textContent = "Who's hurt and who's back"; renderInj(); return; }
     if (isWeek) { upd.textContent = "Week-to-week changes and why"; renderWeek(); return; }
     if (isMock) { upd.textContent = "10-team superflex · 4 rounds"; renderMock(); return; }
     if (isMy) { upd.textContent = "Your leagues · picks · targets"; renderMyDraft(); return; }
@@ -1013,6 +1140,8 @@
         vc.title = vf.flag === "Value" ? "The market takes him later than our board would" : "The market takes him earlier than our board would";
         nm.appendChild(vc);
       }
+      var it0 = injTag(p.id);
+      if (it0) nm.appendChild(it0);
       c2.appendChild(nm);
       var cP = el("div", "ctr c-pos");
       var chip = el("span", "rb-pos");
@@ -1095,6 +1224,7 @@
     ["MYD", "My draft", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"],
     ["MOCK", "Mock", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"],
     ["FAV", "Favorites", "M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.9 6.6 19.8l1.1-6.1L3.2 9.4l6.1-.8z"],
+    ["INJ", "Injuries", "M12 8v8M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"],
     ["WEEK", "This week", "M3 17l6-6 4 4 8-8M15 7h6v6"]
   ];
   var nav = el("nav", "rb-nav");
@@ -1105,7 +1235,7 @@
     b.type = "button"; b.id = "nav-" + n[0];
     b.appendChild(icon(n[2]));
     b.appendChild(el("span", "lb", n[1]));
-    if (n[0] === "FAV") b.appendChild(el("span", "bdg", ""));
+    if (n[0] === "FAV" || n[0] === "INJ") b.appendChild(el("span", "bdg" + (n[0] === "INJ" ? " red" : ""), ""));
     b.addEventListener("click", function () { setView(n[0] === "BOARD" ? lastBoard : n[0]); });
     nav.appendChild(b);
   });
@@ -1194,6 +1324,8 @@
     var nf = pr.status === "ok" ? favCount(pr.data) : 0;
     var bd = document.querySelector("#nav-FAV .bdg");
     bd.textContent = nf ? String(nf) : ""; bd.hidden = !nf;
+    var ni = injCount(), bi = document.querySelector("#nav-INJ .bdg");
+    bi.textContent = ni ? String(ni) : ""; bi.hidden = !ni;
   }
 
   function render() {
