@@ -1,6 +1,6 @@
 /* Offline support. Network first, so new data always wins when there is a connection;
    the last copy seen is served when there isn't. */
-var CACHE = "rookie-board-v2";
+var CACHE = "rookie-board-v3";
 self.addEventListener("install", function () { self.skipWaiting(); });
 self.addEventListener("activate", function (e) {
   e.waitUntil(caches.keys().then(function (keys) {

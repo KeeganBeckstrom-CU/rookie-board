@@ -278,7 +278,7 @@
 
   // ---------- model ----------
   function build() {
-    var ids = ["players", "career", "changes", "mock", "mock_sources", "favorites", "leagues", "my_picks", "my_roster"], D = {};
+    var ids = ["players", "career", "changes", "mock", "mock_sources", "favorites", "leagues", "my_picks", "my_roster", "recap"], D = {};
     for (var i = 0; i < ids.length; i++) {
       var r = dash.data(ids[i]);
       if (r.status === "loading") return "loading";
@@ -286,7 +286,7 @@
     }
     if (!D.players.length) return "error";
     var m = { players: D.players, byId: {}, career: {}, s26: {}, changes: D.changes, mock: D.mock, sources: D.mock_sources,
-      saved: D.favorites.map(function (r) { return r.id; }), leagues: D.leagues, picks: D.my_picks, roster: D.my_roster };
+      saved: D.favorites.map(function (r) { return r.id; }), leagues: D.leagues, picks: D.my_picks, roster: D.my_roster, recap: D.recap };
     m.players.forEach(function (p) { m.byId[p.id] = p; m.career[p.id] = []; });
     D.career.forEach(function (r) { if (m.career[r.player_id]) m.career[r.player_id].push(r); });
     m.players.forEach(function (p) {
@@ -476,12 +476,22 @@
     r.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
     return r;
   }
-  function moveEl(p) {
-    if (p.prev_rank == null) return el("span", "mx-mv new", "NEW");
-    var d = p.prev_rank - p.rank;
-    if (!d) return null;
-    var s = el("span", "mx-mv " + (d > 0 ? "up" : "down"), (d > 0 ? "▲" : "▼") + Math.abs(d));
+  /* Week-over-week move: green up arrow, red down arrow, gold NEW. kind "top" uses the Top 35 rank. */
+  function moveOf(p, kind) {
+    var now = kind === "top" ? p.overall_rank : p.rank, prev = kind === "top" ? p.overall_prev : p.prev_rank;
+    if (now == null) return null;
+    if (prev == null) return "NEW";
+    return prev - now;
+  }
+  function moveEl(p, kind, showFlat) {
+    var d = moveOf(p, kind);
+    if (d == null) return null;
+    if (d === "NEW") { var n = el("span", "mx-mv new", "NEW"); n.setAttribute("aria-label", kind === "top" ? "new to the Top 35 this week" : "new to the board this week"); n.title = n.getAttribute("aria-label"); return n; }
+    if (!d) { if (!showFlat) return null; var f = el("span", "mx-mv flat", "–"); f.setAttribute("aria-label", "no change since last week"); f.title = "No change since last week"; return f; }
+    var s = el("span", "mx-mv " + (d > 0 ? "up" : "down"));
+    add(s, el("i", null, d > 0 ? "▲" : "▼"), el("b", null, String(Math.abs(d))));
     s.setAttribute("aria-label", (d > 0 ? "up " : "down ") + Math.abs(d) + " since last week");
+    s.title = (d > 0 ? "Up " : "Down ") + Math.abs(d) + " since last week";
     return s;
   }
   function boardCols(p, top) {
@@ -597,7 +607,7 @@
       if (top && p.tier != null && p.tier !== lastTier) { list.appendChild(el("div", "mx-tier", "Tier " + p.tier)); lastTier = p.tier; }
       list.appendChild(row(p, {
         rank: fav ? i + 1 : top ? p.overall_rank : p.rank,
-        move: top || fav ? null : moveEl(p),
+        move: moveEl(p, top ? "top" : "pos"),
         cols: boardCols(p, top),
         mini: [posChip(p.pos, p.pos + p.rank), p.tier != null ? "Tier " + p.tier : null, projShort(p.draft_projection)]
       }));
@@ -712,6 +722,115 @@
     });
     main.appendChild(grid);
   }
+
+  // ---------- weekly game recap ----------
+  var RTH = { QB: [24, 16, 10], RB: [20, 12, 6], WR: [20, 12, 6], TE: [15, 9, 5] };
+  function recapPts(r) {
+    if (r.status !== "played") return null;
+    function g(k) { return Number(r[k]) || 0; }
+    return Math.round((g("pass_yds") / 25 + 4 * g("pass_td") - 2 * g("int") + g("rush_yds") / 10 + 6 * g("rush_td") + g("rec") + g("rec_yds") / 10 + 6 * g("rec_td")) * 10) / 10;
+  }
+  function recapTag(r, pts) {
+    if (r.status === "dnp") return ["Did not play", "dnp"];
+    if (r.status === "added") return ["New", "new"];
+    var t = RTH[r.pos] || RTH.WR;
+    return pts >= t[0] ? ["Big game", "big"] : pts >= t[1] ? ["Solid", "solid"] : pts >= t[2] ? ["Quiet", "quiet"] : ["Rough", "rough"];
+  }
+  function statLine(r) {
+    var parts = [];
+    if (r.pass_att != null) parts.push(r.pass_cmp + "/" + r.pass_att + ", " + r.pass_yds + " yds, " + r.pass_td + " TD, " + r.int + " INT");
+    if (r.rush_att != null && (r.rush_att || r.pos === "RB")) parts.push(r.rush_att + " car, " + r.rush_yds + " yds" + (r.rush_td ? ", " + r.rush_td + " TD" : ""));
+    if (r.rec != null && (r.rec || r.pos !== "QB")) parts.push(r.rec + " rec, " + r.rec_yds + " yds" + (r.rec_td ? ", " + r.rec_td + " TD" : ""));
+    return parts.join("  ·  ");
+  }
+  function recapCard(r, p, top) {
+    var pts = recapPts(r), tg = recapTag(r, pts);
+    var c = setTint(el("div", "mx-rcard"), p);
+    c.setAttribute("role", "button"); c.tabIndex = 0;
+    var rk = el("div", "mx-rcrk");
+    rk.appendChild(el("div", "n", top && p.overall_rank != null ? String(p.overall_rank) : p.pos + p.rank));
+    var mv = moveEl(p, top && p.overall_rank != null ? "top" : "pos", true);
+    if (mv) rk.appendChild(mv);
+    var who = el("div", "who");
+    add(who, crest(p), el("span", "nm", p.name), posChip(p.pos, p.pos + p.rank), el("span", "sch", p.school));
+    var score = el("div", "mx-rpts " + tg[1]);
+    if (pts != null) add(score, el("div", "v", pts.toFixed(1)), el("div", "l", "PPR pts"));
+    score.appendChild(el("div", "t", tg[0]));
+    var mid = el("div", "mid");
+    mid.appendChild(who);
+    if (r.result) mid.appendChild(el("div", "res", r.result));
+    var sl = statLine(r);
+    if (sl && r.status === "played" && !r.note) mid.appendChild(el("div", "line", sl));
+    if (r.note) mid.appendChild(el("div", "nt", r.note));
+    add(c, rk, mid, score);
+    var eff = el("div", "eff");
+    add(eff, el("b", null, "Board impact: "), document.createTextNode(r.effect || ""));
+    c.appendChild(eff);
+    if (r.news) c.appendChild(el("div", "news", r.news));
+    var go = function () { openCard(p.id); };
+    c.addEventListener("click", go);
+    c.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    return c;
+  }
+  function recapSection(main) {
+    var rows = (M.recap || []).filter(function (r) { return r.week === state.week && M.byId[r.player_id]; });
+    if (!rows.length) return;
+    var sec = el("section", "mx-panel mx-recap");
+    sec.id = "week-recap";
+    var hd = el("div", "mx-rhead");
+    add(hd, el("h2", "mx-h", "Game recap"), el("p", null, "How every prospect played this weekend, what it was worth in PPR points (4 per pass TD), and what it did to his spot on the board. ▲ green = moved up since last week, ▼ red = moved down."));
+    sec.appendChild(hd);
+    // highlights
+    var played = rows.filter(function (r) { return r.status === "played"; }).map(function (r) { return { r: r, p: M.byId[r.player_id], pts: recapPts(r) }; });
+    var byPts = played.slice().sort(function (a, b) { return b.pts - a.pts; });
+    var best = byPts.filter(function (x) { return x.p.overall_rank != null; }).slice(0, 5);
+    var sleepers = byPts.filter(function (x) { return x.p.overall_rank == null; }).slice(0, 5);
+    var rough = played.filter(function (x) { return x.p.overall_rank != null && recapTag(x.r, x.pts)[1] === "rough"; }).sort(function (a, b) { return a.p.overall_rank - b.p.overall_rank; });
+    var out = rows.filter(function (r) { return r.status === "dnp" && M.byId[r.player_id].overall_rank != null; }).map(function (r) { return { r: r, p: M.byId[r.player_id] }; });
+    var hl = el("div", "mx-rhl");
+    function mini(title, cls, list, right) {
+      if (!list.length) return;
+      var b = el("div", "mx-rmini " + cls);
+      b.appendChild(el("h3", null, title));
+      list.forEach(function (x) {
+        var it = el("button", "it"); it.type = "button";
+        var mv = moveEl(x.p, x.p.overall_rank != null ? "top" : "pos", true);
+        add(it, crest(x.p), el("span", "nm", x.p.name), posChip(x.p.pos, x.p.pos + x.p.rank), mv, el("span", "rt", right(x)));
+        it.addEventListener("click", function () { openCard(x.p.id); });
+        b.appendChild(it);
+      });
+      hl.appendChild(b);
+    }
+    mini("Best games in the Top 35", "big", best, function (x) { return x.pts.toFixed(1) + " pts"; });
+    mini("Sleeper watch: best games outside the Top 35", "sleep", sleepers, function (x) { return x.pts.toFixed(1) + " pts"; });
+    mini("Rough weeks in the Top 35", "rough", rough, function (x) { return x.pts.toFixed(1) + " pts"; });
+    mini("Top 35 players who sat", "dnp", out, function () { return "DNP"; });
+    sec.appendChild(hl);
+    // filter chips
+    var F = [["TOP", "Top 35"], ["QB", "QB"], ["RB", "RB"], ["WR", "WR"], ["TE", "TE"], ["FAV", "★ Favorites"]];
+    if (!state.recapPos) state.recapPos = "TOP";
+    var bar = el("div", "mx-rfilt"); bar.setAttribute("role", "tablist"); bar.setAttribute("aria-label", "Recap filter");
+    F.forEach(function (f) {
+      var b = el("button", "mx-rchip", f[1]); b.type = "button"; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(state.recapPos === f[0]));
+      b.addEventListener("click", function () { state.recapPos = f[0]; renderMainOnly(); var w = document.getElementById("week-recap"); if (w) w.scrollIntoView({ block: "start" }); });
+      bar.appendChild(b);
+    });
+    sec.appendChild(bar);
+    var k = state.recapPos, top = k === "TOP";
+    var list = rows.filter(function (r) {
+      var p = M.byId[r.player_id];
+      return top ? p.overall_rank != null : k === "FAV" ? isFav(p.id) : p.pos === k;
+    }).sort(function (a, b) {
+      var p = M.byId[a.player_id], q = M.byId[b.player_id];
+      return top ? p.overall_rank - q.overall_rank : k === "FAV" ? (p.overall_rank || 99) - (q.overall_rank || 99) || p.rank - q.rank : p.rank - q.rank;
+    });
+    var grid = el("div", "mx-rcards");
+    if (!list.length) grid.appendChild(el("div", "mx-empty", k === "FAV" ? "No favorites yet. Tap the ☆ on any player to add him." : "No players here."));
+    list.forEach(function (r) { var p = M.byId[r.player_id]; grid.appendChild(recapCard(r, p, top)); if (state.navIds.indexOf(p.id) < 0) state.navIds.push(p.id); });
+    sec.appendChild(grid);
+    main.appendChild(sec);
+  }
   function weekView(main) {
     var weeks = Array.from(new Set(M.changes.map(function (r) { return r.week; }))).sort().reverse();
     if (!weeks.length) { main.appendChild(el("div", "mx-empty", "No weekly notes yet.")); return; }
@@ -731,6 +850,7 @@
       });
     });
     state.navIds = [];
+    recapSection(main);
     var grid = el("div", "mx-groups");
     [["riser", "Risers", "riser"], ["faller", "Fallers", "faller"], ["added", "Added to the board", ""], ["removed", "Removed from the board", ""], ["injury", "Injuries and availability", "injury"]].forEach(function (g) {
       var items = rows.filter(function (r) { return r.type === g[0]; });
@@ -1042,7 +1162,7 @@
       key(projShort(p.draft_projection), "Projection"),
       key(p.tier != null ? "Tier " + p.tier : "—", "Talent"),
       key(((p.bio_verified ? 1 : 0) + (p.stats_verified ? 1 : 0)) * 50 + "%", "Verified"),
-      key(mv === "NEW" ? "NEW" : mv === 0 ? "0" : (mv > 0 ? "▲" : "▼") + Math.abs(mv), "Rank change (week)", mv === "NEW" ? "" : mv > 0 ? "up" : mv < 0 ? "down" : ""));
+      key(mv === "NEW" ? "NEW" : mv === 0 ? "–" : (mv > 0 ? "▲ " : "▼ ") + Math.abs(mv), "Rank change (week)", mv === "NEW" ? "" : mv > 0 ? "up" : mv < 0 ? "down" : ""));
     add(head, port, nm, keys);
     inn.appendChild(head);
     inn.appendChild(el("div", "mx-bluebar"));

@@ -8,4 +8,4 @@ Live site: https://keeganbeckstrom-cu.github.io/rookie-board/
 - `runtime.js` – loads the JSON in `data/` and remembers favorites/filters in the browser
 - `manifest.webmanifest`, `sw.js`, `icons/` – app icon, home-screen install and offline support
 - `fonts/` – Barlow, Barlow Condensed and Anton (SIL Open Font License)
-- `data/*.json` – the board's data; replace these files to update the site
+- `data/*.json` – the board's data; replace these files to update the site (`recap.json` is the weekly game recap shown on This week)

@@ -2,7 +2,7 @@
    Loads data/<id>.json, exposes dash.data / dash.onData / dash.calc / dash.params / dash.setParams,
    and the one d3 helper the page uses (d3.utcFormat). Filters and favorites persist in localStorage. */
 (function () {
-  var SOURCES = ["players", "career", "changes", "mock", "mock_sources", "favorites", "leagues", "my_picks", "my_roster"];
+  var SOURCES = ["players", "career", "changes", "mock", "mock_sources", "favorites", "leagues", "my_picks", "my_roster", "recap"];
   var KEY = "rookie-board-params-v1";
   var store = {}, calcs = {}, cache = {}, listeners = [], version = 0;
 
@@ -67,7 +67,7 @@
   function load(id) {
     return fetch("data/" + id + ".json", { cache: "no-cache" })
       .then(function (r) { if (!r.ok) throw new Error(id + ": HTTP " + r.status); return r.json(); })
-      .then(function (rows) { store[id] = { status: "ok", data: rows, meta: [] }; })
+      .then(function (rows) { if (rows && !Array.isArray(rows) && Array.isArray(rows.rows)) rows = rows.rows; store[id] = { status: "ok", data: rows, meta: [] }; })
       .catch(function (e) { console.error(e); store[id] = { status: "error", data: [], message: String(e), meta: [] }; });
   }
 

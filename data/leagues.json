@@ -19,7 +19,7 @@
   "rounds": 4,
   "my_slot": 3,
   "note": "Sleeper shows only 5 games per team in this league, so the projected draft order is shaky.",
-  "pulled": "2026-11-13"
+  "pulled": "2026-11-16"
  },
  {
   "league_id": "1389331009794744320",
@@ -41,7 +41,7 @@
   "rounds": 4,
   "my_slot": 8,
   "note": "",
-  "pulled": "2026-11-13"
+  "pulled": "2026-11-16"
  },
  {
   "league_id": "1357944059481579520",
@@ -63,6 +63,6 @@
   "rounds": 4,
   "my_slot": 3,
   "note": "",
-  "pulled": "2026-11-13"
+  "pulled": "2026-11-16"
  }
 ]

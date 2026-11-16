@@ -142,8 +142,13 @@ button { cursor: pointer; }
 .mx-rk { align-self: stretch; display: grid; place-content: center; justify-items: center; gap: 4px; background: rgba(0,0,0,.35); border-right: 1px solid rgba(0,0,0,.6); }
 .mx-rk .n { font: 800 26px/1 var(--sans); }
 .mx-rk .n.pick { font-size: 18px; }
-.mx-mv { font: 700 12px/1 var(--cond); letter-spacing: .04em; }
-.mx-mv.up { color: var(--ok); } .mx-mv.down { color: var(--bad); } .mx-mv.new { color: var(--gold); }
+.mx-mv { display: inline-flex; align-items: center; gap: 2px; padding: 3px 5px 3px 4px; border-radius: 3px; border: 1px solid rgba(0,0,0,.7);
+  font: 700 12.5px/1 var(--cond); letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+.mx-mv i { font-style: normal; font-size: 10px; }
+.mx-mv.up { background: linear-gradient(180deg, #2fb257, #1c7d3a); }
+.mx-mv.down { background: linear-gradient(180deg, #e2483a, #a92418); }
+.mx-mv.new { background: linear-gradient(180deg, #f5d140, #c79b00); color: #111; letter-spacing: .08em; }
+.mx-mv.flat { background: rgba(255,255,255,.08); color: var(--mut); padding: 3px 7px; }
 .mx-pt { align-self: end; height: 88px; position: relative; }
 .mx-pt .portrait { position: absolute; inset: 0; }
 .mx-nm { min-width: 0; }
@@ -486,3 +491,55 @@ html.mx-lock, html.mx-lock body { overflow: hidden; }
   .mx-nb .bdg[hidden] { display: none; }
 }
 @media (min-width: 681px) { .mx-mini { display: none; } }
+
+/* ---------- this week: game recap ---------- */
+.mx-recap { padding: 14px 16px 16px; margin-top: 14px; display: grid; gap: 12px; }
+.mx-rhead .mx-h { margin: 0; }
+.mx-rhead p { margin: 6px 0 0; color: var(--mut); font-size: 13.5px; line-height: 1.5; max-width: 92ch; }
+.mx-rhl { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
+.mx-rmini { background: rgba(0,0,0,.28); border: 1px solid #000; border-top: 3px solid var(--mc, var(--line)); border-radius: 3px; padding: 8px 10px 6px; }
+.mx-rmini.big { --mc: var(--ok); } .mx-rmini.sleep { --mc: var(--mint); } .mx-rmini.rough { --mc: var(--bad); } .mx-rmini.dnp { --mc: var(--warn); }
+.mx-rmini h3 { margin: 0 0 4px; font: 800 italic 15px/1.1 var(--cond); text-transform: uppercase; letter-spacing: .04em; color: var(--mc); }
+.mx-rmini .it { display: flex; align-items: center; gap: 7px; width: 100%; background: none; border: 0; border-top: 1px solid var(--line2); padding: 6px 0; text-align: left; font: 700 15px/1.15 var(--cond); }
+.mx-rmini .it:first-of-type { border-top: 0; }
+.mx-rmini .it .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mx-rmini .it .rt { font: 700 14px/1 var(--cond); color: var(--txt); font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+.mx-rmini .it .mx-crest { width: 26px; height: 26px; flex: none; }
+.mx-rmini .it:focus-visible { outline: 2px solid var(--hi); }
+.mx-rfilt { display: flex; flex-wrap: wrap; gap: 4px; }
+.mx-rchip { border: 1px solid #000; border-radius: 3px; padding: 7px 12px; background: linear-gradient(180deg, #1d3256, #12223e); color: #d4dceb; font: 700 13.5px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.mx-rchip[aria-selected="true"] { background: linear-gradient(180deg, #e8f57a, var(--hi)); color: #111; }
+.mx-rcards { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 27rem), 1fr)); }
+.mx-rcard { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 6px 12px; align-items: start; padding: 10px 12px; cursor: pointer;
+  background: linear-gradient(90deg, var(--tint, rgba(255,255,255,.05)), rgba(10, 20, 40, .85) 55%); border: 1px solid #000; border-left: 5px solid var(--sc1, var(--line)); border-radius: 3px; }
+.mx-rcard:focus-visible { outline: 2px solid var(--hi); outline-offset: 1px; }
+.mx-rcrk { display: grid; justify-items: center; gap: 5px; }
+.mx-rcrk .n { font: 800 20px/1 var(--sans); white-space: nowrap; }
+.mx-rcard .mid { min-width: 0; display: grid; gap: 3px; }
+.mx-rcard .who { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font: 700 17px/1.15 var(--cond); letter-spacing: .02em; }
+.mx-rcard .who .mx-crest { width: 26px; height: 26px; flex: none; }
+.mx-rcard .who .sch { font: 600 13px/1 var(--cond); color: var(--mut); }
+.mx-rcard .res { font: 700 13px/1.2 var(--cond); color: var(--mut); letter-spacing: .04em; text-transform: uppercase; }
+.mx-rcard .line { font: 700 15px/1.3 var(--cond); color: #fff; font-variant-numeric: tabular-nums; }
+.mx-rcard .nt { font-size: 13px; color: var(--warn); }
+.mx-rpts { text-align: right; display: grid; justify-items: end; gap: 3px; min-width: 64px; }
+.mx-rpts .v { font: 800 22px/1 var(--sans); font-variant-numeric: tabular-nums; }
+.mx-rpts .l { font: 700 10.5px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.mx-rpts .t { font: 700 11px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; padding: 3px 6px; border-radius: 2px; border: 1px solid #000; }
+.mx-rpts.big .t { background: #2fb257; color: #fff; } .mx-rpts.big .v { color: #7ee39b; }
+.mx-rpts.solid .t { background: #2d6fd8; color: #fff; }
+.mx-rpts.quiet .t { background: #55627a; color: #fff; }
+.mx-rpts.rough .t { background: #c2352a; color: #fff; } .mx-rpts.rough .v { color: #f19a90; }
+.mx-rpts.dnp .t { background: var(--warn); color: #111; }
+.mx-rpts.new .t { background: var(--gold); color: #111; }
+.mx-rcard .eff { grid-column: 1 / -1; font-size: 13.5px; line-height: 1.5; color: #d5deeb; border-top: 1px solid var(--line2); padding-top: 6px; }
+.mx-rcard .eff b { font: 700 12px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--hi); }
+.mx-rcard .news { grid-column: 1 / -1; font-size: 12.5px; line-height: 1.45; color: var(--mut); }
+@media (max-width: 680px) {
+  .mx-recap { padding: 12px 10px; }
+  .mx-rcard { grid-template-columns: 46px minmax(0, 1fr) auto; padding: 10px; gap: 5px 9px; }
+  .mx-rcard .who { font-size: 16px; }
+  .mx-rcard .line { font-size: 14px; }
+  .mx-rcard .eff { font-size: 14px; }
+  .mx-rchip { flex: 1 1 auto; min-height: 40px; }
+}
